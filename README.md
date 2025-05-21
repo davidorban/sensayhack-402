@@ -4,7 +4,7 @@ A proof-of-concept implementation of the [Coinbase x402 protocol](https://docs.c
 
 ## 🚀 Overview
 
-This project demonstrates how to integrate the Coinbase x402 protocol with the Sensay API to require cryptocurrency payment before an AI Replica responds to user messages. It serves as a reference implementation for developers looking to monetize AI chat interfaces.
+This project demonstrates how to integrate the Coinbase x402 protocol with the Sensay API to require cryptocurrency payment before an AI Replica responds to user messages. The first two messages are free, and payment is required starting from the third message. This serves as a reference implementation for developers looking to monetize AI chat interfaces.
 
 ## 💡 How It Works
 
@@ -47,6 +47,17 @@ This project demonstrates how to integrate the Coinbase x402 protocol with the S
 - Simulates a payment processor
 - Provides a testing interface for the payment flow
 - Verifies payments with the backend
+
+## 🚀 Recent Changes
+
+### 2025-05-21
+- Fixed payment verification cache issue (Set → Map)
+- Added debug endpoint for message count verification
+- Improved error handling in payment flow
+- Added system message styling and handling
+- Implemented proper CSP headers for security
+- Added loading spinners and improved UI feedback
+- Enhanced error messages for failed payments
 
 ## 🚀 Getting Started
 

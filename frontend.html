@@ -2,105 +2,376 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src *; frame-src *; base-uri 'self'; form-action 'self'; child-src *;" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sensay x402 Chat</title>
   <style>
     body { 
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      padding: 2em; 
-      max-width: 600px; 
-      margin: 0 auto;
-      line-height: 1.6;
+      padding: 20px; 
+      max-width: 800px; 
+      margin: 0 auto; 
+      background-color: #f5f7fa;
       color: #333;
+      line-height: 1.6;
     }
+    
+    /* Payment button styles */
+    .payment-button, .retry-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      gap: 0.5rem;
+    }
+    
+    .payment-button {
+      background-color: #4f46e5;
+      color: white;
+    }
+    
+    .payment-button:hover {
+      background-color: #4338ca;
+      transform: translateY(-1px);
+    }
+    
+    .payment-button:active {
+      transform: translateY(0);
+    }
+    
+    .retry-button {
+      background-color: #f3f4f6;
+      color: #4b5563;
+      border: 1px solid #d1d5db;
+    }
+    
+    .retry-button:hover {
+      background-color: #e5e7eb;
+    }
+    
+    .button-spinner {
+      display: none;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .button-text {
+      display: inline-block;
+    }
+    
+    .button-spinner svg {
+      width: 100%;
+      height: 100%;
+      fill: currentColor;
+    }
+    
+    .payment-container {
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .payment-container h3 {
+      margin-top: 0;
+      color: #1f2937;
+      font-size: 1.25rem;
+    }
+    
+    .session-info {
+      background: #f9fafb;
+      border-left: 3px solid #4f46e5;
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      border-radius: 0 4px 4px 0;
+    }
+    
+    .session-info p {
+      margin: 0.25rem 0;
+      font-size: 0.9rem;
+    }
+    
+    .session-info code {
+      background: #eef2ff;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+      color: #4f46e5;
+    }
+    
+    .payment-help {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #6b7280;
+    }
+    
+    .payment-help a {
+      color: #4f46e5;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    .payment-help a:hover {
+      text-decoration: underline;
+    }
+    
     h1 {
       color: #2c3e50;
       text-align: center;
-      margin-bottom: 1.5em;
+      margin-bottom: 30px;
+      font-weight: 600;
+      font-size: 2.2em;
     }
-    textarea { 
-      width: 100%; 
-      height: 100px; 
-      margin-bottom: 1em; 
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-family: inherit;
-      font-size: 14px;
+    
+    #chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 70vh;
+      border: 1px solid #e0e0e0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      background-color: white;
     }
-    button { 
-      padding: 10px 20px;
-      background-color: #3498db;
+    
+    #response {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background-color: #f8f9fa;
+    }
+    
+    .user-message, .ai-message, .system-message {
+      margin-bottom: 20px;
+      padding: 12px 18px;
+      border-radius: 12px;
+      max-width: 80%;
+      position: relative;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    
+    .user-message {
+      margin-left: auto;
+      background: linear-gradient(135deg, #4a90e2, #357abd);
+      color: white;
+      border-top-right-radius: 4px;
+    }
+    
+    .ai-message {
+      margin-right: auto;
+      background-color: #ffffff;
+      border: 1px solid #e9ecef;
+      border-top-left-radius: 4px;
+    }
+    
+    .system-message {
+      margin: 10px auto;
+      background-color: #f8f9fa;
+      border: 1px solid #e9ecef;
+      color: #6c757d;
+      font-style: italic;
+      text-align: center;
+      max-width: 60%;
+    }
+    
+    .message-meta {
+      font-size: 0.75em;
+      opacity: 0.8;
+      margin-top: 8px;
+      word-break: break-all;
+    }
+    
+    .user-message .message-meta {
+      color: rgba(255,255,255,0.85);
+    }
+    
+    .ai-message .message-meta {
+      color: #6c757d;
+    }
+    
+    #input-area {
+      display: flex;
+      padding: 15px 20px;
+      background-color: #fff;
+      border-top: 1px solid #e9ecef;
+      align-items: center;
+    }
+    
+    #message-input {
+      flex: 1;
+      padding: 12px 18px;
+      border: 2px solid #e9ecef;
+      border-radius: 24px;
+      margin-right: 12px;
+      font-size: 15px;
+      outline: none;
+      transition: all 0.3s ease;
+      resize: none;
+      max-height: 120px;
+      min-height: 48px;
+    }
+    
+    #message-input:focus {
+      border-color: #4a90e2;
+      box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+    }
+    
+    button {
+      padding: 12px 24px;
+      background-color: #4a90e2;
       color: white;
       border: none;
-      border-radius: 4px;
+      border-radius: 24px;
       cursor: pointer;
-      font-size: 16px;
-      transition: background-color 0.2s;
+      font-size: 15px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      white-space: nowrap;
     }
+    
     button:hover {
-      background-color: #2980b9;
+      background-color: #357abd;
+      transform: translateY(-1px);
     }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
     button:disabled {
       background-color: #95a5a6;
       cursor: not-allowed;
+      transform: none;
     }
-    #response, #payment-instructions { 
-      margin-top: 1.5em; 
-      padding: 1em;
-      border-radius: 4px;
-      background-color: #f8f9fa;
-      border: 1px solid #eee;
-      min-height: 50px;
+    
+    #payment-instructions {
+      margin: 25px 0;
+      padding: 20px;
+      border: 1px solid #ffc107;
+      border-radius: 12px;
+      background-color: #fff8e1;
+      display: none;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     }
+    
     .payment-container {
-      margin: 1em 0;
-      padding: 1em;
-      background: #f8f9fa;
-      border: 1px solid #e9ecef;
-      border-radius: 4px;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px dashed #ffc107;
     }
+    
+    .payment-info {
+      margin-bottom: 15px;
+      line-height: 1.6;
+    }
+    
+    .payment-info p {
+      margin: 8px 0;
+    }
+    
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
     .payment-button {
-      background-color: #2ecc71;
-      margin-right: 10px;
+      background-color: #28a745 !important;
+      flex: 1;
     }
+    
     .payment-button:hover {
-      background-color: #27ae60;
+      background-color: #218838 !important;
     }
+    
     .retry-button {
-      background-color: #e74c3c;
+      background-color: #ffc107 !important;
+      color: #212529 !important;
+      flex: 1;
     }
+    
     .retry-button:hover {
-      background-color: #c0392b;
+      background-color: #e0a800 !important;
     }
+    
     .status-message {
-      margin: 0.5em 0;
-      padding: 0.5em;
-      border-radius: 4px;
+      padding: 12px 16px;
+      margin: 10px 0 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-    .success {
-      background-color: #d4edda;
+    
+    .status-info {
+      background-color: #e7f5ff;
+      color: #0056b3;
+      border: 1px solid #b3d7ff;
+    }
+    
+    .status-success {
+      background-color: #e6f7e6;
       color: #155724;
-      border: 1px solid #c3e6cb;
+      border: 1px solid #b7eb8f;
     }
-    .error {
-      background-color: #f8d7da;
+    
+    .status-error {
+      background-color: #fde8e8;
       color: #721c24;
       border: 1px solid #f5c6cb;
     }
-    .info {
-      background-color: #d1ecf1;
-      color: #0c5460;
-      border: 1px solid #bee5eb;
+    
+    code {
+      background-color: rgba(0,0,0,0.05);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.85em;
+      color: #e83e8c;
+    }
+    
+    @media (max-width: 768px) {
+      #chat-container {
+        height: 80vh;
+      }
+      
+      .user-message, .ai-message {
+        max-width: 90%;
+      }
+      
+      .button-group {
+        flex-direction: column;
+      }
+      
+      button {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
   <h1>Pay-to-Chat with Sensay</h1>
-  <textarea id="user-input" placeholder="Type your message..."></textarea><br />
-  <button id="send-button">Send</button>
-
-  <div id="response">Send a message to start chatting...</div>
+  <div id="chat-container">
+    <div id="response">Send a message to start chatting...</div>
+    <div id="input-area">
+      <textarea id="message-input" placeholder="Type your message..."></textarea>
+      <button id="send-button">Send</button>
+    </div>
+  </div>
   <div id="payment-instructions"></div>
 
   <script>
@@ -110,159 +381,561 @@
     let paymentCheckInterval = null;
 
     // DOM Elements
+    const messageInput = document.getElementById('message-input');
     const sendButton = document.getElementById('send-button');
-    const userInput = document.getElementById('user-input');
     const responseBox = document.getElementById('response');
     const paymentBox = document.getElementById('payment-instructions');
+    
+    // Track the current session and pending messages
+    let currentSessionId = localStorage.getItem('sessionId');
+    let pendingMessages = [];
 
-    // Event Listeners
-    sendButton.addEventListener('click', handleSendMessage);
-    userInput.addEventListener('keypress', (e) => {
+    // Initialize the chat interface
+    function initChat() {
+      // Load any existing session data
+      if (currentSessionId) {
+        const sessionMessages = sessionStorage.getItem(`session_${currentSessionId}`);
+        if (sessionMessages) {
+          try {
+            const messages = JSON.parse(sessionMessages);
+            messages.forEach(msg => {
+              displayMessage(msg.content, msg.type === 'user' ? 'user' : 'ai', msg.id);
+            });
+          } catch (e) {
+            console.error('Error loading session messages:', e);
+          }
+        }
+      } else {
+        // Create a new session ID if none exists
+        currentSessionId = 'sess_' + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem('sessionId', currentSessionId);
+      }
+      
+      // Load any pending messages
+      if (currentSessionId) {
+        const pending = sessionStorage.getItem(`pending_${currentSessionId}`);
+        if (pending) {
+          try {
+            pendingMessages = JSON.parse(pending);
+            if (pendingMessages.length > 0) {
+              showInfo('You have pending messages. Complete payment to continue.');
+            }
+          } catch (e) {
+            console.error('Error loading pending messages:', e);
+          }
+        }
+      }
+    }
+    
+    // Initialize the chat when the page loads
+    document.addEventListener('DOMContentLoaded', initChat);
+
+    // Handle Enter key press (but allow Shift+Enter for new lines)
+    messageInput.addEventListener('keydown', function(e) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         handleSendMessage();
       }
     });
 
+    // Handle send button click
+    sendButton.addEventListener('click', handleSendMessage);
+
+    // Display a message in the chat
+    function displayMessage(content, sender = 'ai', messageId = null) {
+      const messageIdAttr = messageId ? `data-message-id="${messageId}"` : '';
+      const messageClass = sender === 'user' ? 'user-message' : 'ai-message';
+      const senderName = sender === 'user' ? 'You' : 'AI';
+      
+      const messageElement = document.createElement('div');
+      messageElement.className = messageClass;
+      messageElement.setAttribute('data-message-id', messageId || '');
+      
+      messageElement.innerHTML = `
+        <strong>${senderName}:</strong> ${escapeHtml(content)}
+        <div class="message-meta">
+          ${messageId ? `Message ID: ${messageId}` : ''}
+          ${currentSessionId && sender === 'ai' ? ` | Session: ${currentSessionId.substring(0, 8)}...` : ''}
+        </div>
+      `;
+      
+      responseBox.appendChild(messageElement);
+      responseBox.scrollTop = responseBox.scrollHeight;
+    }
+    
+    // Add a temporary message (for loading, status updates, etc.)
+    function addMessage(content, sender = 'system', messageId = null) {
+      const messageElement = document.createElement('div');
+      messageElement.className = sender === 'system' ? 'system-message' : (sender === 'user' ? 'user-message' : 'ai-message');
+      messageElement.setAttribute('data-message-id', messageId || '');
+      
+      messageElement.innerHTML = `
+        <div class="message-content">${escapeHtml(content)}</div>
+      `;
+      
+      responseBox.appendChild(messageElement);
+      responseBox.scrollTop = responseBox.scrollHeight;
+      return messageElement;
+    }
+    
+    // Remove a message by its ID
+    function removeMessage(messageId) {
+      if (!messageId) return;
+      
+      const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+      if (messageElement) {
+        messageElement.remove();
+      }
+    }
+
     // Handle sending a message
-    function handleSendMessage() {
-      const message = userInput.value.trim();
-      if (message) {
-        sendMessage(message);
+    async function handleSendMessage() {
+      const message = messageInput.value.trim();
+      if (!message) return;
+      
+      // Ensure we have a session ID
+      if (!currentSessionId) {
+        currentSessionId = 'sess_' + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem('sessionId', currentSessionId);
+      }
+      
+      // Clear the input immediately for better UX
+      messageInput.value = '';
+      
+      // Display the user's message
+      const messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+      displayMessage(message, 'user', messageId);
+      
+      try {
+        // Send the message to the server
+        await sendMessage(message, messageId, currentSessionId);
+      } catch (error) {
+        console.error('Error in handleSendMessage:', error);
+        showError(`Failed to send message: ${error.message}`);
       }
     }
 
     // Open payment window and handle payment flow
-    function openPaymentWindow(url, paymentId) {
-      // Close any existing payment window
-      if (paymentWindow && !paymentWindow.closed) {
-        paymentWindow.close();
+    async function openPaymentWindow(paymentUrl, paymentId) {
+      showInfo('Opening payment window...');
+      console.log('Opening payment window with URL:', paymentUrl);
+      
+      // Ensure we have a session ID
+      if (!currentSessionId) {
+        currentSessionId = 'sess_' + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem('sessionId', currentSessionId);
       }
       
-      // Open new payment window
-      paymentWindow = window.open(url, 'payment', 'width=500,height=600');
+      // Show loading state
+      const loadingMessageId = `loading-${Date.now()}`;
+      addMessage('Processing payment request...', 'system', loadingMessageId);
       
-      // Check if window was blocked
-      if (!paymentWindow || paymentWindow.closed || typeof paymentWindow.closed === 'undefined') {
-        showError('Popup was blocked. Please allow popups for this site and try again.');
-        return false;
-      }
-      
-      // Set up polling to check if payment was completed
-      if (paymentCheckInterval) clearInterval(paymentCheckInterval);
-      paymentCheckInterval = setInterval(() => {
-        if (paymentWindow.closed) {
-          clearInterval(paymentCheckInterval);
-          // After payment window closes, check payment status
-          checkPaymentStatus(paymentId);
-        }
-      }, 500);
-      
-      return true;
-    }
-    
-    // Check payment status with the server
-    async function checkPaymentStatus(paymentId) {
       try {
-        showInfo('Verifying payment...');
-        const response = await fetch(`/payment-status/${paymentId}`);
-        const data = await response.json();
+        // Open the payment window
+        const width = 500, height = 700;
+        const left = (window.screen.width - width) / 2;
+        const top = (window.screen.height - height) / 2;
         
-        if (data.paid) {
-          lastPayProof = paymentId;
-          showSuccess('Payment verified!');
-          // If we have a pending message, resend it
-          if (pendingMessage) {
-            sendMessage(pendingMessage, true);
-          }
-        } else {
-          showError('Payment not verified. Please try again.');
-          // Show payment button again
-          showPaymentButton(paymentId);
+        const paymentWindow = window.open(
+          paymentUrl + (paymentUrl.includes('?') ? '&' : '?') + 'sessionId=' + encodeURIComponent(currentSessionId),
+          'paymentWindow',
+          `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no`
+        );
+        
+        if (!paymentWindow) {
+          throw new Error('Popup was blocked. Please allow popups for this site and try again.');
         }
+        
+        return new Promise((resolve, reject) => {
+          // Create a function to check payment status
+          async function checkPaymentStatus() {
+            try {
+              if (paymentWindow.closed) {
+                // Check payment status
+                const statusResponse = await fetch(`/payment-status/${paymentId}?userId=${encodeURIComponent(currentSessionId)}`);
+                if (!statusResponse.ok) {
+                  throw new Error('Failed to check payment status');
+                }
+                
+                const statusData = await statusResponse.json();
+                
+                if (statusData.paid) {
+                  clearInterval(checkInterval);
+                  resolve(true);
+                  showSuccess('Payment successful! Processing your message...');
+                  
+                  // Get any pending messages from session storage
+                  const pendingMessages = JSON.parse(sessionStorage.getItem(`pending_${currentSessionId}`) || '[]');
+                  const pendingMessageIndex = pendingMessages.findIndex(msg => msg.paymentId === paymentId);
+                  
+                  if (pendingMessageIndex !== -1) {
+                    const pendingMessage = pendingMessages[pendingMessageIndex];
+                    
+                    // Remove from pending
+                    pendingMessages.splice(pendingMessageIndex, 1);
+                    sessionStorage.setItem(`pending_${currentSessionId}`, JSON.stringify(pendingMessages));
+                    
+                    // Resend the message with the same message ID
+                    await sendMessage(pendingMessage.content, pendingMessage.messageId, currentSessionId, true);
+                  }
+                  
+                  // Hide payment instructions if visible
+                  const paymentBox = document.getElementById('payment-instructions');
+                  if (paymentBox) {
+                    paymentBox.style.display = 'none';
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('Error checking payment status:', error);
+              clearInterval(checkInterval);
+              reject(error);
+            }
+          }
+          
+          // Create a function to handle payment timeout
+          function handlePaymentTimeout() {
+            clearInterval(checkInterval);
+            if (paymentWindow && !paymentWindow.closed) {
+              paymentWindow.close();
+            }
+            reject(new Error('Payment window timed out'));
+          }
+          
+          // Listen for payment completion
+          const checkInterval = setInterval(checkPaymentStatus, 1000);
+          
+          // Also check if the tab is still open after 5 minutes
+          const timeoutId = setTimeout(handlePaymentTimeout, 5 * 60 * 1000);
+          
+          // Clean up the timeout when the promise resolves or rejects
+          const cleanup = () => clearTimeout(timeoutId);
+          Promise.resolve().then(() => {
+            if (typeof checkPaymentStatus === 'function') {
+              const paymentPromise = new Promise((resolve, reject) => {
+                const checkInterval = setInterval(checkPaymentStatus, 1000);
+                // Also add the same cleanup to the new promise
+                const cleanupCheck = () => {
+                  clearInterval(checkInterval);
+                  clearTimeout(timeoutId);
+                };
+                // Attach cleanup to both success and failure cases
+                resolve.cleanupFn = cleanupCheck;
+                reject.cleanupFn = cleanupCheck;
+              });
+              
+              paymentPromise.then(cleanup, cleanup);
+            }
+          });
+        });
+        
       } catch (error) {
-        console.error('Error checking payment status:', error);
-        showError('Error verifying payment. Please try again.');
+        console.error('Payment error:', error);
+        showError(`Payment error: ${error.message}`);
+        throw error;
+      } finally {
+        // Remove loading message
+        removeMessage(loadingMessageId);
       }
     }
     
     // Show payment button with retry option
-    function showPaymentButton(paymentId) {
+    function showPaymentButton(paymentId, sessionId = null) {
+      const paymentBox = document.getElementById('payment-instructions');
+      const currentSessionId = sessionId || (window.currentSessionId || 'sess_' + Math.random().toString(36).substring(2, 15));
+      
+      // Set the current session ID if not already set
+      if (!window.currentSessionId) {
+        window.currentSessionId = currentSessionId;
+        localStorage.setItem('sessionId', currentSessionId);
+      }
+      
+      const sessionContext = currentSessionId ? `
+        <div class="session-info">
+          <p>Session ID: <code class="session-id">${currentSessionId}</code></p>
+          <p>Payment ID: <code class="payment-id">${paymentId}</code></p>
+        </div>` : '';
+      
+      // Create the payment container
       paymentBox.innerHTML = `
         <div class="payment-container">
-          <p>Payment required to continue.</p>
-          <button class="payment-button" onclick="openPaymentWindow('/mock-pay.html?paymentId=${paymentId}', '${paymentId}')">
-            Pay Now
-          </button>
-          <button class="retry-button" onclick="checkPaymentStatus('${paymentId}')">
-            I've Paid
-          </button>
+          <h3>Payment Required</h3>
+          <p>To continue chatting, please complete the payment below.</p>
+          ${sessionContext}
+          <div class="button-group">
+            <button id="pay-now-button" class="payment-button" data-payment-id="${paymentId}" data-session-id="${encodeURIComponent(currentSessionId)}">
+              <span class="button-text">Pay Now</span>
+              <span class="button-spinner" style="display: none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 22c5.523 0 10-4.477 10-10h-2c0 4.418-3.582 8-8 8s-8-3.582-8-8c0-4.418 3.582-8 8-8v2c-3.866 0-7 3.134-7 7s3.134 7 7 7 7-3.134 7-7h2c0 5.523-4.477 10-10 10z"/>
+                </svg>
+              </span>
+            </button>
+            <button id="already-paid-button" class="retry-button" data-payment-id="${paymentId}" data-session-id="${encodeURIComponent(currentSessionId)}">
+              I've Already Paid
+            </button>
+          </div>
+          <div class="payment-help">
+            <p>Having trouble? <a href="#" id="payment-help-link">Get help with payment</a></p>
+          </div>
         </div>`;
+        
+      // Add event listeners to the buttons
+      const payNowButton = paymentBox.querySelector('#pay-now-button');
+      const alreadyPaidButton = paymentBox.querySelector('#already-paid-button');
+      const helpLink = paymentBox.querySelector('#payment-help-link');
+      
+      if (payNowButton) {
+        payNowButton.addEventListener('click', () => {
+          const paymentId = payNowButton.getAttribute('data-payment-id');
+          const sessionId = payNowButton.getAttribute('data-session-id');
+          window.openPaymentWindow(`/mock-pay.html?paymentId=${paymentId}&sessionId=${sessionId}`, paymentId);
+        });
+      }
+      
+      if (alreadyPaidButton) {
+        alreadyPaidButton.addEventListener('click', () => {
+          const paymentId = alreadyPaidButton.getAttribute('data-payment-id');
+          const sessionId = alreadyPaidButton.getAttribute('data-session-id');
+          window.checkPaymentStatus(paymentId, sessionId);
+        });
+      }
+      
+      if (helpLink) {
+        helpLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.showHelp();
+        });
+      }
+      paymentBox.style.display = 'block';
     }
 
-    // Send message to the server
-    async function sendMessage(message, isRetry = false) {
-      // Update UI
-      if (!isRetry) {
-        pendingMessage = message;
-        responseBox.textContent = 'Sending...';
-        paymentBox.textContent = '';
-        sendButton.disabled = true;
-      } else {
-        responseBox.textContent = 'Resending message...';
-      }
-
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      if (lastPayProof) {
-        headers['Pay-Proof'] = lastPayProof;
-      }
-
+    // Check payment status with the server
+    async function checkPaymentStatus(paymentId, sessionId = null) {
       try {
-        const res = await fetch('/chat', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ message })
-        });
-
-        if (res.status === 402) {
-          // Payment required
-          const payUrl = res.headers.get('Pay');
-          const payToken = res.headers.get('Pay-Token');
-          
-          if (payUrl && payToken) {
-            // Show payment button
-            showPaymentButton(payToken);
-            // Open payment window
-            openPaymentWindow(payUrl, payToken);
-          } else {
-            showError('Payment required but payment information is missing.');
-          }
-        } else if (res.ok) {
-          // Message sent successfully
-          const data = await res.json();
-          responseBox.textContent = data.reply || 'No response from server';
-          // Clear pending message on success
-          pendingMessage = null;
-          // Clear the input
-          userInput.value = '';
-        } else {
-          throw new Error(`Server error: ${res.status}`);
+        if (!paymentId) {
+          throw new Error('No payment ID provided');
         }
-      } catch (err) {
-        console.error('Error:', err);
-        showError(`Error: ${err.message}`);
+        
+        const currentSessionId = sessionId || window.currentSessionId;
+        if (!currentSessionId) {
+          throw new Error('No active session found');
+        }
+        
+        // Show loading state
+        const paymentButton = document.querySelector('.payment-button');
+        const buttonText = paymentButton?.querySelector('.button-text');
+        const buttonSpinner = paymentButton?.querySelector('.button-spinner');
+        
+        if (buttonText) buttonText.textContent = 'Verifying...';
+        if (buttonSpinner) buttonSpinner.style.display = 'inline-block';
+        
+        showInfo('Verifying payment...');
+        console.log('Checking payment status for:', { paymentId, sessionId: currentSessionId });
+        
+        const response = await fetch(`/payment-status/${paymentId}?userId=${encodeURIComponent(currentSessionId)}`, {
+          headers: { 'Accept': 'application/json' }
+        });
+        
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+          throw new Error(error.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Payment status response:', data);
+        
+        if (data.paid) {
+          showSuccess('Payment verified! Processing your message...');
+          
+          // Get the pending message from session storage
+          const pendingMessages = JSON.parse(sessionStorage.getItem(`pending_${currentSessionId}`) || '[]');
+          const pendingMessageIndex = pendingMessages.findIndex(msg => msg.paymentId === paymentId);
+          
+          if (pendingMessageIndex !== -1) {
+            const pendingMessage = pendingMessages[pendingMessageIndex];
+            
+            // Remove from pending
+            pendingMessages.splice(pendingMessageIndex, 1);
+            sessionStorage.setItem(`pending_${currentSessionId}`, JSON.stringify(pendingMessages));
+            
+            // Resend the message with the same message ID
+            await sendMessage(pendingMessage.content, pendingMessage.messageId, currentSessionId, true);
+          } else {
+            showInfo('Payment verified! You can continue chatting.');
+          }
+          
+          // Hide payment instructions
+          const paymentBox = document.getElementById('payment-instructions');
+          if (paymentBox) {
+            paymentBox.style.display = 'none';
+          }
+          
+          return true;
+        } else {
+          showInfo('Payment not completed yet. Please complete the payment or try again.');
+          return false;
+        }
+      } catch (error) {
+        console.error('Error checking payment status:', error);
+        showError(`Payment verification failed: ${error.message}`);
+        return false;
+      } finally {
+        // Reset button state
+        const paymentButton = document.querySelector('.payment-button');
+        const buttonText = paymentButton?.querySelector('.button-text');
+        const buttonSpinner = paymentButton?.querySelector('.button-spinner');
+        
+        if (buttonText) buttonText.textContent = 'Pay Now';
+        if (buttonSpinner) buttonSpinner.style.display = 'none';
+      }
+    }
+    
+    // Send message to the server with session tracking
+    async function sendMessage(message, messageId, sessionId, isRetry = false) {
+      const sendButton = document.getElementById('send-button');
+      
+      // Show loading state
+      const originalButtonText = sendButton.textContent;
+      sendButton.disabled = true;
+      sendButton.textContent = 'Sending...';
+      
+      try {
+        const requestBody = { 
+          message,
+          metadata: {
+            messageId,
+            sessionId,
+            timestamp: new Date().toISOString()
+          }
+        };
+        
+        console.log('Sending message:', { messageId, sessionId, isRetry });
+        
+        const response = await fetch('/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Request-ID': messageId,
+            'X-Session-ID': sessionId || ''
+          },
+          body: JSON.stringify(requestBody)
+        });
+        
+        const responseData = await response.json();
+        console.log('Server response:', { status: response.status, data: responseData });
+        
+        if (response.status === 200) {
+          showSuccess('');
+          
+          // Display the AI's response
+          displayMessage(responseData.reply || 'No response from server', 'ai', messageId);
+          
+          // Store the successful message in session storage
+          if (sessionId) {
+            const sessionMessages = JSON.parse(sessionStorage.getItem(`session_${sessionId}`) || '[]');
+            
+            // Add user message
+            sessionMessages.push({
+              id: messageId,
+              type: 'user',
+              content: message,
+              timestamp: new Date().toISOString()
+            });
+            
+            // Add AI response
+            sessionMessages.push({
+              id: messageId,
+              type: 'ai',
+              content: responseData.reply || 'No response from server',
+              timestamp: new Date().toISOString()
+            });
+            
+            sessionStorage.setItem(`session_${sessionId}`, JSON.stringify(sessionMessages));
+          }
+          
+        } else if (response.status === 402) {
+          // Payment required
+          console.log('Payment required:', responseData);
+          
+          // Store the pending message
+          if (sessionId) {
+            const pendingMessages = JSON.parse(sessionStorage.getItem(`pending_${sessionId}`) || '[]');
+            pendingMessages.push({
+              messageId,
+              content: message,
+              paymentId: responseData.paymentId,
+              timestamp: new Date().toISOString()
+            });
+            sessionStorage.setItem(`pending_${sessionId}`, JSON.stringify(pendingMessages));
+          }
+          
+          // Show payment UI with the payment URL from the server
+          if (responseData.paymentUrl) {
+            // Open the payment window with the provided URL
+            const paymentWindowOpened = openPaymentWindow(responseData.paymentUrl, responseData.paymentId);
+            
+            if (!paymentWindowOpened) {
+              showError('Could not open payment window. Please allow popups and try again.');
+              throw new Error('Failed to open payment window');
+            }
+            
+            // Show payment information
+            paymentBox.innerHTML = `
+              <div class="payment-info">
+                <p>🔒 This message requires a small payment to process.</p>
+                <p>Click the button below to complete the payment (test mode).</p>
+                <p>Amount: <strong>${responseData.amount} ${responseData.currency}</strong></p>
+                <p>Message ID: <code>${messageId}</code></p>
+                <p>Payment ID: <code>${responseData.paymentId}</code></p>
+                <p>Session: <code>${sessionId ? `${sessionId.substring(0, 8)}...` : 'unknown'}</code></p>
+                <div class="payment-actions">
+                  <button id="open-payment-btn" class="btn btn-primary">Open Payment Window</button>
+                  <button id="check-payment-btn" class="btn btn-secondary">Check Payment Status</button>
+                </div>
+              </div>
+            `;
+            
+            // Add event listeners for the buttons
+            document.getElementById('open-payment-btn')?.addEventListener('click', () => {
+              openPaymentWindow(responseData.paymentUrl, responseData.paymentId);
+            });
+            
+            document.getElementById('check-payment-btn')?.addEventListener('click', () => {
+              checkPaymentStatus(responseData.paymentId, sessionId);
+            });
+            
+            paymentBox.style.display = 'block';
+          } else {
+            throw new Error('No payment URL provided by server');
+          }
+          
+        } else {
+          throw new Error(responseData.error || `Server responded with status ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Error sending message:', error);
+        showError(`Failed to send message: ${error.message}`);
         
         // Show retry button if this wasn't a retry
-        if (!isRetry && pendingMessage) {
-          paymentBox.innerHTML = `
-            <button class="retry-button" onclick="sendMessage('${escapeHtml(pendingMessage)}', true)">
-              Retry Sending Message
-            </button>`;
+        if (!isRetry) {
+          const retryButton = document.createElement('button');
+          retryButton.className = 'retry-button';
+          retryButton.textContent = 'Retry';
+          retryButton.onclick = () => sendMessage(message, messageId, sessionId, true);
+          
+          const errorDiv = document.createElement('div');
+          errorDiv.className = 'status-error';
+          errorDiv.innerHTML = `<p>Failed to send message.</p>`;
+          errorDiv.appendChild(retryButton);
+          
+          responseBox.appendChild(errorDiv);
+          responseBox.scrollTop = responseBox.scrollHeight;
         }
       } finally {
+        // Restore button state
         sendButton.disabled = false;
+        sendButton.textContent = originalButtonText;
       }
     }
 
@@ -279,6 +952,140 @@
       paymentBox.innerHTML = `<div class="status-message info">${message}</div>`;
     }
     
+    // Show help information for payment issues
+    function showHelp(event) {
+      if (event) event.preventDefault();
+      
+      const helpContent = `
+        <div class="help-container">
+          <h3>Payment Help</h3>
+          <p>If you're having trouble with your payment, please try the following:</p>
+          <ol>
+            <li>Ensure your payment method is valid and has sufficient funds</li>
+            <li>Check if popups are allowed for this site</li>
+            <li>Try refreshing the page and starting over</li>
+            <li>If the issue persists, please contact support with your Payment ID</li>
+          </ol>
+          <div class="payment-ids">
+            <p><strong>Payment ID:</strong> <span id="current-payment-id">Not available</span></p>
+            <p><strong>Session ID:</strong> <span id="current-session-id">${window.currentSessionId || 'Not available'}</span></p>
+          </div>
+          <div class="button-group">
+            <button id="refresh-page-button" class="payment-button">
+              Refresh Page
+            </button>
+            <button id="close-help-button" class="retry-button">
+              Close
+            </button>
+          </div>
+        </div>
+      `;
+      
+      // Remove any existing help dialogs
+      document.querySelector('.help-container')?.remove();
+      
+      // Create and show help dialog
+      const helpDialog = document.createElement('div');
+      helpDialog.className = 'help-dialog';
+      helpDialog.innerHTML = helpContent;
+      
+      // Add styles
+      const style = document.createElement('style');
+      style.textContent = `
+        .help-dialog {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: white;
+          padding: 2rem;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+          z-index: 1000;
+          max-width: 500px;
+          width: 90%;
+        }
+        .help-dialog h3 {
+          margin-top: 0;
+          color: #2c3e50;
+        }
+        .help-dialog ol {
+          padding-left: 1.5rem;
+        }
+        .help-dialog .payment-ids {
+          background: #f8f9fa;
+          padding: 1rem;
+          border-radius: 4px;
+          margin: 1rem 0;
+          font-family: monospace;
+          font-size: 0.9em;
+        }
+        .help-dialog .button-group {
+          display: flex;
+          gap: 1rem;
+          margin-top: 1.5rem;
+        }
+      `;
+      
+      // Add to document
+      document.body.appendChild(style);
+      document.body.appendChild(helpDialog);
+      
+      // Update with current payment ID if available
+      const paymentIdElement = document.getElementById('current-payment-id');
+      const paymentId = document.querySelector('.payment-id')?.textContent;
+      if (paymentIdElement && paymentId) {
+        paymentIdElement.textContent = paymentId;
+      }
+      
+      // Add event listeners to the help dialog buttons
+      const refreshButton = document.getElementById('refresh-page-button');
+      const closeButton = document.getElementById('close-help-button');
+      
+      const cleanup = () => {
+        if (refreshButton) {
+          refreshButton.removeEventListener('click', handleRefresh);
+        }
+        if (closeButton) {
+          closeButton.removeEventListener('click', handleClose);
+        }
+        // Remove the help dialog when navigating away
+        document.removeEventListener('click', handleOutsideClick);
+      };
+      
+      const handleRefresh = () => {
+        window.location.reload();
+      };
+      
+      const handleClose = () => {
+        helpDialog.remove();
+        style.remove();
+        cleanup();
+      };
+      
+      const handleOutsideClick = (event) => {
+        if (!helpDialog.contains(event.target) && !event.target.closest('.help-container')) {
+          handleClose();
+        }
+      };
+      
+      if (refreshButton) {
+        refreshButton.addEventListener('click', handleRefresh);
+      }
+      
+      if (closeButton) {
+        closeButton.addEventListener('click', handleClose);
+      }
+      
+      // Close when clicking outside the help dialog
+      document.addEventListener('click', handleOutsideClick);
+      
+      // Prevent clicks inside the dialog from closing it
+      helpDialog.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+    }
+    
     // Helper to escape HTML for safe insertion
     function escapeHtml(unsafe) {
       return unsafe
@@ -289,6 +1096,29 @@
         .replace(/'/g, "&#039;");
     }
 
+    // Expose functions to the window object for inline handlers
+    window.openPaymentWindow = openPaymentWindow;
+    window.checkPaymentStatus = checkPaymentStatus;
+    window.showHelp = showHelp;
+    
+    // Debug function to get message count
+    window.getMessageCount = async function() {
+      try {
+        const response = await fetch('/debug-message-count', {
+          headers: {
+            'X-Session-ID': currentSessionId || ''
+          }
+        });
+        const data = await response.json();
+        console.log('Current message count:', data.messageCount);
+        showInfo(`Current message count: ${data.messageCount}`);
+        return data.messageCount;
+      } catch (error) {
+        console.error('Error checking message count:', error);
+        showError(`Error checking message count: ${error.message}`);
+      }
+    };
+    
     console.log('Frontend initialized. Ready to chat!');
   </script>
 </body>

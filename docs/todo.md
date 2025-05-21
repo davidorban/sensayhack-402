@@ -5,8 +5,8 @@
 ## ✅ Environment
 
 * [x] Load API key, Org ID, Replica ID from `.env`
-* [ ] Create `.env.example` and `.env` files
-* [ ] Add README setup guide for local environment
+* [x] Create `.env.example` and `.env` files
+* [x] Add README setup guide for local environment
 * [ ] Dockerize backend proxy (optional)
 * [ ] Enable deployment to Replit / Vercel / Fly.io (optional)
 
@@ -16,9 +16,9 @@
 
 * [x] Express backend proxy with payment enforcement
 * [x] HTML frontend with simple input + response flow
-* [ ] Add support for session tracking (userId, messageId)
-* [ ] Add logging (requests, payment proofs, errors)
-* [ ] Replace in-memory receipt cache with Redis
+* [x] Add support for session tracking (userId, messageId)
+* [x] Add logging (requests, payment proofs, errors)
+* [ ] Replace in-memory receipt cache with Redis  ⏳ **NEXT TASK**
 * [ ] Extract payment verification logic into utility module
 * [ ] Modularize Sensay API call function
 
@@ -28,19 +28,36 @@
 
 * [ ] QR code rendering (e.g., Base or Lightning invoices)
 * [ ] Support multiple price tiers or dynamic pricing (based on content size, priority, etc.)
-* [ ] Add JWT or token authentication for tracking users
-* [ ] Add GET `/status` endpoint to check payment + chat state
+* [x] Add JWT/session authentication for tracking users
+* [x] Add GET `/status` endpoint to check payment + chat state
 * [ ] Unit tests for payment enforcement logic
 * [ ] Switch to Coinbase CDP SDK for header management
-* [ ] Graceful fallback handling on payment verification failure
+* [x] Graceful fallback handling on payment verification failure
 * [ ] Rate limit unpaid retries (optional security feature)
 
 ---
 
 ## 🎨 Frontend Enhancements
 
-* [ ] Add loading spinner / disable button during fetch
-* [ ] Improve error messages for failed payments
+* [x] Add loading spinner / disable button during fetch
+* [x] Improve error messages for failed payments
+* [x] Add user-friendly payment flow with clear instructions
+* [x] Add system message styling and handling
+* [x] Implement message count debugging
+
+---
+
+## 🚀 Recently Completed
+
+* Fixed payment verification cache issue (Set → Map)
+* Added debug endpoint for message count verification
+* Improved error handling in payment flow
+* Added system message styling and handling
+* Implemented proper CSP headers for security
+* Enhanced payment verification with proper error handling
+* Added request/response timing and improved error messages
+* Implemented graceful shutdown handling
+* Fixed all linting issues and improved code organization
 * [ ] Auto-resend message after payment completion (polling or retry)
 * [ ] Add QR code visualization if available
 * [ ] Basic mobile-friendly styling or Tailwind integration
