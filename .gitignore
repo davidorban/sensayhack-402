@@ -6,8 +6,10 @@ yarn-error.log
 package-lock.json
 yarn.lock
 
-# Environment variables
+# Sensitive files
 .env
+*.pem
+sensay-api-openapi-source.yaml
 .env.*
 !.env.example
 
