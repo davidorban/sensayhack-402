@@ -10,6 +10,7 @@ import { readdirSync } from 'node:fs';
 import { securityHeadersMiddleware } from './middleware/security.js';
 import { sessionMiddleware } from './middleware/session.js';
 import { errorHandlerMiddleware } from './middleware/error-handler.js';
+import { requirePayment } from './middleware/payment.js';
 
 // Import routes
 import apiRoutes from './routes/api.js';
@@ -92,10 +93,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// API Routes - must come before the SPA fallback
-app.use('/api', apiRoutes);
+// API Routes with payment middleware
+app.use('/api', requirePayment, apiRoutes);
+
+// Payment routes (for callbacks and verification)
 app.use('/payment', paymentRoutes);
-app.use('/debug', debugRoutes);
+
+// Debug routes (only in development)
+if (config.nodeEnv === 'development') {
+  app.use('/debug', debugRoutes);
+}
 
 // Serve the frontend index.html for the root route
 app.get('/', (req, res) => {

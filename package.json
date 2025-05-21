@@ -7,9 +7,11 @@
   "scripts": {
     "start": "node src/backend/server.js",
     "dev": "NODE_ENV=development DEBUG=* node src/backend/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "NODE_ENV=test mocha 'test/payment.test.cjs' --require test/test-helper.cjs --exit",
+    "test:watch": "NODE_ENV=test mocha 'test/payment.test.cjs' --require test/test-helper.cjs --watch --exit"
   },
   "dependencies": {
+    "async-retry": "^1.3.3",
     "axios": "^1.9.0",
     "dotenv": "^16.5.0",
     "express": "^4.18.2",
@@ -19,10 +21,29 @@
     "redis": "^5.1.0",
     "winston": "^3.17.0"
   },
-  "engines": {
-    "node": ">=14.0.0"
+  "devDependencies": {
+    "chai": "^5.2.0",
+    "chai-as-promised": "^8.0.1",
+    "esm": "^3.2.25",
+    "mocha": "^10.8.2",
+    "sinon": "^18.0.1",
+    "sinon-chai": "^4.0.0"
   },
-  "keywords": ["sensay", "hackathon", "payment", "api"],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "mocha": {
+    "recursive": true,
+    "require": [
+      "test/test-helper.cjs"
+    ]
+  },
+  "keywords": [
+    "sensay",
+    "hackathon",
+    "payment",
+    "api"
+  ],
   "author": "",
   "license": "MIT"
 }
