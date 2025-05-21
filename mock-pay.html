@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mock Payment Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      text-align: center;
+    }
+    .payment-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      background-color: #f9f9f9;
+    }
+    button {
+      background-color: #0052ff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #0039a6;
+    }
+    .status {
+      margin: 20px 0;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mock Payment Page</h1>
+  <div class="payment-card">
+    <h2>Payment Details</h2>
+    <p>Amount: <strong>10 USDC</strong></p>
+    <p>Recipient: <strong>Sensay AI</strong></p>
+    <p>Network: <strong>Base</strong></p>
+    <div id="paymentStatus" class="status"></div>
+    <button id="payButton">Simulate Payment</button>
+    <p><small>This is a demo. No real payment will be processed.</small></p>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const paymentId = urlParams.get('paymentId');
+      const statusEl = document.getElementById('paymentStatus');
+      const payButton = document.getElementById('payButton');
+
+      if (!paymentId) {
+        statusEl.textContent = 'Error: No payment ID provided';
+        statusEl.className = 'status error';
+        payButton.disabled = true;
+        return;
+      }
+
+      payButton.addEventListener('click', async () => {
+        try {
+          // Simulate payment processing
+          payButton.disabled = true;
+          payButton.textContent = 'Processing...';
+          
+          // In a real app, this would be a call to the payment processor
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          
+          // Verify payment with our mock endpoint
+          const response = await fetch('http://localhost:3000/mock-verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paymentId })
+          });
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            statusEl.textContent = '✅ Payment successful! You can now return to the chat.';
+            statusEl.className = 'status success';
+            payButton.textContent = 'Payment Complete';
+            
+            // Auto-close after 2 seconds
+            setTimeout(() => {
+              window.close();
+            }, 2000);
+          } else {
+            throw new Error('Payment verification failed');
+          }
+        } catch (error) {
+          console.error('Payment error:', error);
+          statusEl.textContent = '❌ Payment failed. Please try again.';
+          statusEl.className = 'status error';
+          payButton.disabled = false;
+          payButton.textContent = 'Try Again';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
