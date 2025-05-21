@@ -539,13 +539,30 @@ function checkIfPaymentRequired(userSession) {
  */
 async function forwardToSensay(message, userId, messageId, session) {
   try {
-    // In a real implementation, you would forward to the actual Sensay API
-    // For demo purposes, we'll simulate a response
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    const response = await axios.post(
+      `https://api.sensay.io/v1/experimental/replicas/${process.env.SENSAY_REPLICA_ID}/chat/completions`,
+      {
+        messages: [
+          {
+            role: 'user',
+            content: message
+          }
+        ]
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-KEY': process.env.SENSAY_API_KEY,
+          'X-ORGANIZATION-SECRET': process.env.SENSAY_API_KEY,
+          'X-API-Version': '2025-03-25',
+          'X-USER-ID': process.env.SENSAY_USER_ID
+        }
+      }
+    );
     
     return {
-      reply: `This is a simulated response to: ${message}`,
-      model: 'simulated-model-1.0',
+      reply: response.data.choices[0]?.message?.content || '[no reply]',
+      model: response.data.model,
       timestamp: new Date().toISOString()
     };
     
