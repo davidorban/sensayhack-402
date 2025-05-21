@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sensay x402 Chat</title>
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      padding: 2em; 
+      max-width: 600px; 
+      margin: 0 auto;
+      line-height: 1.6;
+      color: #333;
+    }
+    h1 {
+      color: #2c3e50;
+      text-align: center;
+      margin-bottom: 1.5em;
+    }
+    textarea { 
+      width: 100%; 
+      height: 100px; 
+      margin-bottom: 1em; 
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+    }
+    button { 
+      padding: 10px 20px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    button:disabled {
+      background-color: #95a5a6;
+      cursor: not-allowed;
+    }
+    #response, #payment-instructions { 
+      margin-top: 1.5em; 
+      padding: 1em;
+      border-radius: 4px;
+      background-color: #f8f9fa;
+      border: 1px solid #eee;
+      min-height: 50px;
+    }
+    .payment-container {
+      margin: 1em 0;
+      padding: 1em;
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 4px;
+    }
+    .payment-button {
+      background-color: #2ecc71;
+      margin-right: 10px;
+    }
+    .payment-button:hover {
+      background-color: #27ae60;
+    }
+    .retry-button {
+      background-color: #e74c3c;
+    }
+    .retry-button:hover {
+      background-color: #c0392b;
+    }
+    .status-message {
+      margin: 0.5em 0;
+      padding: 0.5em;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .info {
+      background-color: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pay-to-Chat with Sensay</h1>
+  <textarea id="user-input" placeholder="Type your message..."></textarea><br />
+  <button id="send-button">Send</button>
+
+  <div id="response">Send a message to start chatting...</div>
+  <div id="payment-instructions"></div>
+
+  <script>
+    let lastPayProof = null;
+    let pendingMessage = null;
+    let paymentWindow = null;
+    let paymentCheckInterval = null;
+
+    // DOM Elements
+    const sendButton = document.getElementById('send-button');
+    const userInput = document.getElementById('user-input');
+    const responseBox = document.getElementById('response');
+    const paymentBox = document.getElementById('payment-instructions');
+
+    // Event Listeners
+    sendButton.addEventListener('click', handleSendMessage);
+    userInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSendMessage();
+      }
+    });
+
+    // Handle sending a message
+    function handleSendMessage() {
+      const message = userInput.value.trim();
+      if (message) {
+        sendMessage(message);
+      }
+    }
+
+    // Open payment window and handle payment flow
+    function openPaymentWindow(url, paymentId) {
+      // Close any existing payment window
+      if (paymentWindow && !paymentWindow.closed) {
+        paymentWindow.close();
+      }
+      
+      // Open new payment window
+      paymentWindow = window.open(url, 'payment', 'width=500,height=600');
+      
+      // Check if window was blocked
+      if (!paymentWindow || paymentWindow.closed || typeof paymentWindow.closed === 'undefined') {
+        showError('Popup was blocked. Please allow popups for this site and try again.');
+        return false;
+      }
+      
+      // Set up polling to check if payment was completed
+      if (paymentCheckInterval) clearInterval(paymentCheckInterval);
+      paymentCheckInterval = setInterval(() => {
+        if (paymentWindow.closed) {
+          clearInterval(paymentCheckInterval);
+          // After payment window closes, check payment status
+          checkPaymentStatus(paymentId);
+        }
+      }, 500);
+      
+      return true;
+    }
+    
+    // Check payment status with the server
+    async function checkPaymentStatus(paymentId) {
+      try {
+        showInfo('Verifying payment...');
+        const response = await fetch(`/payment-status/${paymentId}`);
+        const data = await response.json();
+        
+        if (data.paid) {
+          lastPayProof = paymentId;
+          showSuccess('Payment verified!');
+          // If we have a pending message, resend it
+          if (pendingMessage) {
+            sendMessage(pendingMessage, true);
+          }
+        } else {
+          showError('Payment not verified. Please try again.');
+          // Show payment button again
+          showPaymentButton(paymentId);
+        }
+      } catch (error) {
+        console.error('Error checking payment status:', error);
+        showError('Error verifying payment. Please try again.');
+      }
+    }
+    
+    // Show payment button with retry option
+    function showPaymentButton(paymentId) {
+      paymentBox.innerHTML = `
+        <div class="payment-container">
+          <p>Payment required to continue.</p>
+          <button class="payment-button" onclick="openPaymentWindow('/mock-pay.html?paymentId=${paymentId}', '${paymentId}')">
+            Pay Now
+          </button>
+          <button class="retry-button" onclick="checkPaymentStatus('${paymentId}')">
+            I've Paid
+          </button>
+        </div>`;
+    }
+
+    // Send message to the server
+    async function sendMessage(message, isRetry = false) {
+      // Update UI
+      if (!isRetry) {
+        pendingMessage = message;
+        responseBox.textContent = 'Sending...';
+        paymentBox.textContent = '';
+        sendButton.disabled = true;
+      } else {
+        responseBox.textContent = 'Resending message...';
+      }
+
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      if (lastPayProof) {
+        headers['Pay-Proof'] = lastPayProof;
+      }
+
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ message })
+        });
+
+        if (res.status === 402) {
+          // Payment required
+          const payUrl = res.headers.get('Pay');
+          const payToken = res.headers.get('Pay-Token');
+          
+          if (payUrl && payToken) {
+            // Show payment button
+            showPaymentButton(payToken);
+            // Open payment window
+            openPaymentWindow(payUrl, payToken);
+          } else {
+            showError('Payment required but payment information is missing.');
+          }
+        } else if (res.ok) {
+          // Message sent successfully
+          const data = await res.json();
+          responseBox.textContent = data.reply || 'No response from server';
+          // Clear pending message on success
+          pendingMessage = null;
+          // Clear the input
+          userInput.value = '';
+        } else {
+          throw new Error(`Server error: ${res.status}`);
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        showError(`Error: ${err.message}`);
+        
+        // Show retry button if this wasn't a retry
+        if (!isRetry && pendingMessage) {
+          paymentBox.innerHTML = `
+            <button class="retry-button" onclick="sendMessage('${escapeHtml(pendingMessage)}', true)">
+              Retry Sending Message
+            </button>`;
+        }
+      } finally {
+        sendButton.disabled = false;
+      }
+    }
+
+    // Helper functions for showing status messages
+    function showSuccess(message) {
+      paymentBox.innerHTML = `<div class="status-message success">${message}</div>`;
+    }
+    
+    function showError(message) {
+      paymentBox.innerHTML = `<div class="status-message error">${message}</div>`;
+    }
+    
+    function showInfo(message) {
+      paymentBox.innerHTML = `<div class="status-message info">${message}</div>`;
+    }
+    
+    // Helper to escape HTML for safe insertion
+    function escapeHtml(unsafe) {
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    console.log('Frontend initialized. Ready to chat!');
+  </script>
+</body>
+</html>
