@@ -4,8 +4,9 @@ import { logger } from '../utils/logger.js';
 class SessionStore {
   constructor() {
     // In-memory stores
-    this.activeSessions = new Map(); // Maps userId -> session data
-    this.paymentProofs = new Map();  // Maps proof -> { userId, validUntil }
+    this.activeSessions = new Map();
+    this.pendingPayments = new Map();
+    this.receiptCache = new Map();
     
     // Setup cleanup interval
     setInterval(this.cleanupOldSessions.bind(this), 60 * 60 * 1000); // Every hour
@@ -26,34 +27,7 @@ class SessionStore {
    * @param {Object} sessionData 
    */
   setSession(userId, sessionData) {
-    const existingSession = this.getSession(userId) || {};
-    this.activeSessions.set(userId, { ...existingSession, ...sessionData });
-  }
-  
-  /**
-   * Update payment information for a user
-   * @param {string} userId 
-   * @param {Object} paymentInfo 
-   */
-  updatePaymentInfo(userId, paymentInfo) {
-    const session = this.getSession(userId) || {};
-    session.paymentInfo = {
-      ...session.paymentInfo,
-      ...paymentInfo,
-      updatedAt: new Date().toISOString()
-    };
-    this.setSession(userId, session);
-    return session.paymentInfo;
-  }
-  
-  /**
-   * Get payment information for a user
-   * @param {string} userId 
-   * @returns {Object} Payment info
-   */
-  getPaymentInfo(userId) {
-    const session = this.getSession(userId);
-    return session?.paymentInfo || null;
+    this.activeSessions.set(userId, sessionData);
   }
   
   /**

@@ -1,74 +1,53 @@
-# Sensay x402 Paywall Integration
+# Sensay x402 Paywall Demo
 
-A production-ready implementation of the [Coinbase x402 protocol](https://docs.cdp.coinbase.com/x402/overview) for paywalling AI chat interactions using Sensay's API, with support for direct wallet payments and external wallet redirection.
+A proof-of-concept implementation of the [Coinbase x402 protocol](https://docs.cdp.coinbase.com/x402/overview) for paywalling AI chat interactions using Sensay's API.
 
-## 🚀 Features
+## 🚀 Overview
 
-- **Seamless Payment Flow**: Integrates with Coinbase Pay and Web3 wallets
-- **External Wallet Support**: Direct payments to your external wallet address
-- **QR Code Payments**: Easy payment initiation with scannable QR codes
-- **Flexible Configuration**: Supports multiple assets and networks
-- **Robust Verification**: Secure payment verification with retry logic
-- **Comprehensive Testing**: Full test coverage for all payment scenarios
+This project demonstrates how to integrate the Coinbase x402 protocol with the Sensay API to require cryptocurrency payment before an AI Replica responds to user messages. The first two messages are free, and payment is required starting from the third message. This serves as a reference implementation for developers looking to monetize AI chat interfaces.
 
-## 📖 Documentation
+## 💡 How It Works
 
-For detailed implementation details, architecture, and API reference, see the [Payment Integration Documentation](./docs/payment-integration.md).
+### Payment Flow
 
-## 💰 Payment Flow
-
-1. **Payment Initiation**:
-   - User requests a service that requires payment
-   - System generates a payment URL and QR code
-   - User can pay via Web3 wallet (e.g., MetaMask) or Coinbase Pay
+1. **Initial Request**:
+   - User sends a message through the frontend
+   - Backend checks for a valid payment proof
+   - If no proof exists, returns a 402 Payment Required response with payment details
 
 2. **Payment Processing**:
-   - Funds are sent directly to your external wallet
-   - Payment is verified through Coinbase's API
-   - Session is updated with payment status
+   - Frontend receives 402 response and displays payment instructions
+   - User is redirected to a payment page (mock implementation included)
+   - After payment, the payment processor verifies the transaction
 
-3. **Service Access**:
-   - Upon successful verification, user gains access
-   - Payment status is cached for subsequent requests
-   - Detailed logging for all payment events
+3. **Verification**:
+   - Backend verifies the payment proof with the payment processor
+   - Valid proofs are cached for future requests
+   - Invalid or expired proofs are rejected
+
+4. **AI Interaction**:
+   - Once payment is verified, the message is forwarded to Sensay's API
+   - The AI's response is returned to the user
 
 ## 🛠️ Technical Architecture
 
-### Core Components
+### Backend Architecture
 
-#### Backend Services
-- **Payment Controller**: Handles payment verification and status checks
-- **Chat Controller**: Manages AI interactions with payment validation
-- **Coinbase Service**: Integrates with Coinbase's payment APIs
-- **Session Store**: Manages payment sessions and state
+The backend follows a modular architecture designed with the following components:
 
-#### Frontend Components
-- **Payment Modal**: Handles payment initiation and status display
-- **QR Code Generator**: Creates scannable payment QR codes
-- **Wallet Connector**: Integrates with Web3 wallets for direct payments
+#### Core Structure
+- **app.js**: Main Express application setup with middleware and route registration
+- **server.js**: Server entry point with graceful shutdown handling
 
-### Data Flow
+#### Controllers
+- **chat-controller.js**: Handles chat message processing, payment requirements, and API integration
+- **payment-controller.js**: Manages payment processing, verification, and receipt generation
+- **debug-controller.js**: Provides debugging endpoints for session and payment information
 
-1. **Initiation**:
-   ```mermaid
-   sequenceDiagram
-       User->>Frontend: Request Service
-       Frontend->>Backend: /api/payments/initiate
-       Backend->>Coinbase: Create Payment
-       Coinbase-->>Backend: Payment Details
-       Backend-->>Frontend: Payment URL + QR Code
-   ```
-
-2. **Verification**:
-   ```mermaid
-   sequenceDiagram
-       User->>Wallet: Approve Payment
-       Wallet->>Blockchain: Send Funds
-       Blockchain->>External Wallet: Transfer
-       Backend->>Coinbase: Verify Payment
-       Coinbase-->>Backend: Verification Result
-       Backend-->>Frontend: Access Granted
-   ```
+#### Services
+- **sensay-service.js**: Integrates with Sensay's API for sending and receiving chat messages
+- **payment-service.js**: Handles payment creation, verification, and status checking
+- **session-store.js**: In-memory storage for sessions, pending payments, and payment receipts
 
 #### Middleware
 - **security.js**: Implements security headers and CSP configuration

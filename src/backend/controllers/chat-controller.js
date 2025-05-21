@@ -1,5 +1,6 @@
 // Chat controller
 import { SensayService } from '../services/sensay-service.js';
+import { PaymentService } from '../services/payment-service.js';
 import { sessionStore } from '../services/session-store.js';
 import { generateMessageId, generateRequestId } from '../utils/id-generator.js';
 import { logger } from '../utils/logger.js';
@@ -9,9 +10,6 @@ export const ChatController = {
    * Process a chat message
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
-   */
-  /**
-   * Process a chat message with payment check
    */
   async processMessage(req, res) {
     const startTime = process.hrtime();
@@ -43,6 +41,7 @@ export const ChatController = {
           createdAt: new Date(),
           lastActive: new Date(),
           messageCount: 0,
+          paymentStatus: {},
           metadata: {}
         };
         sessionStore.setSession(userId, userSession);
@@ -50,7 +49,6 @@ export const ChatController = {
       
       // Update session activity
       userSession.lastActive = new Date();
-      userSession.messageCount = (userSession.messageCount || 0) + 1;
       userSession.messageCount = (userSession.messageCount || 0) + 1;
       sessionStore.setSession(userId, userSession);
       
