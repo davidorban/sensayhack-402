@@ -11,23 +11,35 @@ sequenceDiagram
     participant F as Frontend
     participant B as Backend
     participant C as Coinbase API
+    participant M as MetaMask
     participant W as External Wallet
 
     U->>F: Initiate Payment
     F->>B: Request Payment URL
     B->>C: Generate Payment Request
-    C-->>B: Return Payment URL
-    B-->>F: Return Payment URL + QR Code
-    F->>U: Display Payment Options
+    C-->>B: Return Payment URL + Details
+    B-->>F: Return Payment Options
     
-    alt Web3 Wallet (e.g., MetaMask)
-        U->>W: Approve Payment
-        W->>C: Send Funds
-        C->>W: Confirm Transaction
+    alt Web3 Wallet (MetaMask)
+        F->>U: Detect MetaMask
+        U->>M: Approve Connection
+        F->>M: Request Payment
+        U->>M: Confirm Transaction
+        M->>W: Send Funds
+        M-->>F: Transaction Hash
+        F->>B: Verify Payment
+        B->>C: Check Transaction
+        C-->>B: Payment Confirmed
+        B-->>F: Access Granted
     else Coinbase Pay
+        F->>U: Display QR Code/URL
         U->>C: Complete Payment
         C->>W: Forward Funds
+        C-->>B: Payment Webhook
+        B-->>F: Payment Confirmed
     end
+    
+    F->>U: Grant Access to Content
 
     C->>B: Payment Verification
     B->>F: Payment Confirmation
@@ -95,6 +107,102 @@ The system handles:
 - Network congestion
 - Expired payments
 - Invalid payment proofs
+
+## MetaMask Integration
+
+### Frontend Implementation
+
+1. **Check for MetaMask**
+   ```javascript
+   // Check if MetaMask is installed
+   if (typeof window.ethereum !== 'undefined') {
+     console.log('MetaMask is installed!');
+   } else {
+     // Handle case where MetaMask is not installed
+     console.log('Please install MetaMask!');
+   }
+   ```
+
+2. **Connect to MetaMask**
+   ```javascript
+   async function connectMetaMask() {
+     try {
+       // Request account access
+       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+       const account = accounts[0];
+       console.log('Connected account:', account);
+       return account;
+     } catch (error) {
+       console.error('User denied account access');
+       return null;
+     }
+   }
+   ```
+
+3. **Send Payment**
+   ```javascript
+   async function sendPayment(recipient, amount) {
+     try {
+       // Convert amount to wei (18 decimal places)
+       const amountInWei = window.web3.utils.toWei(amount.toString(), 'ether');
+       
+       // Send transaction
+       const txHash = await window.ethereum.request({
+         method: 'eth_sendTransaction',
+         params: [{
+           from: accounts[0],
+           to: recipient,
+           value: amountInWei,
+           gas: '21000', // Standard gas limit for simple transfers
+         }],
+       });
+       
+       console.log('Transaction hash:', txHash);
+       return txHash;
+     } catch (error) {
+       console.error('Payment failed:', error);
+       throw error;
+     }
+   }
+   ```
+
+### Backend Verification
+
+1. **Verify Transaction**
+   ```javascript
+   const Web3 = require('web3');
+   const web3 = new Web3(process.env.INFURA_URL);
+   
+   async function verifyTransaction(txHash, expectedRecipient, expectedAmount) {
+     try {
+       // Get transaction receipt
+       const receipt = await web3.eth.getTransactionReceipt(txHash);
+       
+       if (!receipt || !receipt.status) {
+         return { success: false, error: 'Transaction failed or not found' };
+       }
+       
+       // Get transaction details
+       const tx = await web3.eth.getTransaction(txHash);
+       
+       // Verify recipient and amount
+       const amountInWei = web3.utils.toWei(expectedAmount.toString(), 'ether');
+       
+       if (tx.to.toLowerCase() !== expectedRecipient.toLowerCase()) {
+         return { success: false, error: 'Incorrect recipient' };
+       }
+       
+       if (tx.value !== amountInWei) {
+         return { success: false, error: 'Incorrect amount' };
+       }
+       
+       return { success: true };
+     } catch (error) {
+       console.error('Verification failed:', error);
+       return { success: false, error: error.message };
+     }
+   }
+   ```
 
 ## Implementation Details
 
