@@ -10,4 +10,7 @@ router.post('/verify', PaymentController.verifyPayment);
 // Payment status endpoint
 router.get('/status/:paymentId', PaymentController.checkPaymentStatus);
 
+// Payment details endpoint
+router.get('/details/:paymentId', PaymentController.getPaymentDetails);
+
 export default router;

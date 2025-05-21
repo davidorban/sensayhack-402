@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src *; frame-src *; base-uri 'self'; form-action 'self'; child-src *;">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mock Payment - Sensay x402 Demo</title>
+  <title>X402 Payment - Sensay Demo</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -164,11 +164,18 @@
   <div class="container">
     <div class="logo">
       <h1>Sensay x402 Demo</h1>
-      <div class="subtitle">Paywall Gateway</div>
+      <div class="subtitle">X402 Payment Gateway</div>
+    </div>
+    
+    <div id="qrCodeContainer" style="text-align: center; margin: 20px 0; display: none;">
+      <img id="qrCodeImage" src="" alt="QR Code" style="max-width: 250px; margin: 0 auto;" />
+      <div style="margin-top: 10px; font-size: 12px; color: #666;">
+        Scan with your wallet app
+      </div>
     </div>
     
     <div class="payment-details">
-      <div class="amount" id="amountDisplay">$0.01 USD</div>
+      <div class="amount" id="amountDisplay">0.01 USDC</div>
       
       <div class="detail-row">
         <span class="detail-label">Payment ID</span>
@@ -176,11 +183,15 @@
       </div>
       <div class="detail-row">
         <span class="detail-label">Recipient</span>
-        <span class="detail-value">Sensay AI</span>
+        <span class="detail-value" id="recipientDisplay">Sensay AI</span>
       </div>
       <div class="detail-row">
         <span class="detail-label">Network</span>
-        <span class="detail-value">Base</span>
+        <span class="detail-value" id="networkDisplay">Base</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Wallet Address</span>
+        <span class="detail-value" id="walletDisplay" style="font-size: 10px; word-break: break-all;">-</span>
       </div>
       <div class="detail-row">
         <span class="detail-label">Status</span>
@@ -190,13 +201,23 @@
     
     <div id="paymentStatus" class="status"></div>
     
+    <button id="metamaskButton" style="background-color: #f6851b; margin-bottom: 10px; display: none;">
+      <span id="metamaskLoader" class="loading"></span>
+      <span id="metamaskText">Pay with MetaMask</span>
+    </button>
+    
     <button id="payButton">
       <span id="buttonLoader" class="loading"></span>
       <span id="buttonText">Approve Payment</span>
     </button>
     
+    <button id="checkButton" style="background-color: #5a5a5a; margin-top: 5px;">
+      <span id="checkLoader" class="loading"></span>
+      <span id="checkText">Check Payment Status</span>
+    </button>
+    
     <div class="disclaimer">
-      This is a demo payment page. No real funds will be transferred.
+      This is a demo payment page using the X402 protocol.
       <br>Powered by Sensay x402 Paywall Demo
     </div>
   </div>
@@ -207,21 +228,34 @@
       const paymentId = urlParams.get('paymentId');
       const userId = urlParams.get('userId');
       let amount = urlParams.get('amount') || '0.01';
-      const currency = urlParams.get('currency') || 'USD';
+      const currency = urlParams.get('currency') || 'USDC';
+      const chain = urlParams.get('chain') || 'base';
       
-      // Format amount to 2 decimal places
-      amount = parseFloat(amount).toFixed(2);
+      // Format amount to appropriate decimal places
+      amount = parseFloat(amount).toFixed(currency === 'USDC' ? 6 : 2);
       
       const statusEl = document.getElementById('paymentStatus');
       const payButton = document.getElementById('payButton');
       const buttonText = document.getElementById('buttonText');
       const buttonLoader = document.getElementById('buttonLoader');
+      const metamaskButton = document.getElementById('metamaskButton');
+      const metamaskText = document.getElementById('metamaskText');
+      const metamaskLoader = document.getElementById('metamaskLoader');
+      const checkButton = document.getElementById('checkButton');
+      const checkText = document.getElementById('checkText');
+      const checkLoader = document.getElementById('checkLoader');
       const amountDisplay = document.getElementById('amountDisplay');
       const paymentIdDisplay = document.getElementById('paymentIdDisplay');
+      const recipientDisplay = document.getElementById('recipientDisplay');
+      const networkDisplay = document.getElementById('networkDisplay');
+      const walletDisplay = document.getElementById('walletDisplay');
+      const qrCodeContainer = document.getElementById('qrCodeContainer');
+      const qrCodeImage = document.getElementById('qrCodeImage');
       const statusText = document.getElementById('statusText');
       
       // Update UI with payment details
-      amountDisplay.textContent = `${currency === 'USD' ? '$' : ''}${amount} ${currency}`;
+      amountDisplay.textContent = `${amount} ${currency}`;
+      networkDisplay.textContent = chain.charAt(0).toUpperCase() + chain.slice(1); // Capitalize first letter
       
       if (paymentId) {
         // Format payment ID for display
@@ -240,46 +274,247 @@
           alert(`Payment ID: ${paymentId}`);
         });
         
-        // Check if payment is already verified
-        checkPaymentStatus();
+        // Fetch payment details to get wallet address and QR code
+        fetchPaymentDetails();
       } else {
         showError('No payment ID provided');
         payButton.disabled = true;
+        checkButton.disabled = true;
         return;
+      }
+      
+      // Check for MetaMask availability
+      if (typeof window.ethereum !== 'undefined') {
+        metamaskButton.style.display = 'block';
+        metamaskButton.addEventListener('click', connectMetaMask);
       }
       
       // Handle payment button click
       payButton.addEventListener('click', processPayment);
+      
+      // Handle check button click
+      checkButton.addEventListener('click', checkPaymentStatus);
       
       // Auto-start payment if auto=1 is in URL (for testing)
       if (urlParams.get('auto') === '1') {
         processPayment();
       }
       
-      async function checkPaymentStatus() {
+      // Fetch payment details from server
+      async function fetchPaymentDetails() {
         try {
-          const response = await fetch(`/payment/status/${paymentId}?userId=${encodeURIComponent(userId || '')}`);
-          const result = await response.json();
+          const response = await fetch(`/payment/details/${paymentId}?userId=${encodeURIComponent(userId || '')}`);
           
-          if (result.paid) {
-            // Payment already verified
+          if (!response.ok) {
+            throw new Error(`Failed to fetch payment details: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          
+          // Update UI with payment details
+          if (data.walletAddress) {
+            walletDisplay.textContent = data.walletAddress;
+            walletDisplay.title = data.walletAddress;
+            
+            // Make wallet address clickable
+            walletDisplay.style.cursor = 'pointer';
+            walletDisplay.style.textDecoration = 'underline';
+            walletDisplay.addEventListener('click', (e) => {
+              e.preventDefault();
+              
+              // Copy to clipboard
+              navigator.clipboard.writeText(data.walletAddress)
+                .then(() => showStatus('Wallet address copied to clipboard', 'info'))
+                .catch(err => console.error('Could not copy text: ', err));
+            });
+          }
+          
+          if (data.qrCode) {
+            qrCodeImage.src = data.qrCode;
+            qrCodeContainer.style.display = 'block';
+          }
+          
+          if (data.asset) {
+            amountDisplay.textContent = `${data.amount} ${data.asset.toUpperCase()}`;
+          }
+          
+          if (data.chain) {
+            networkDisplay.textContent = data.chain.charAt(0).toUpperCase() + data.chain.slice(1);
+          }
+          
+          // Check if payment is already verified
+          if (data.status === 'completed' || data.status === 'paid') {
             showStatus('Payment already verified', 'success');
             statusText.textContent = 'Completed';
             statusText.style.color = '#0a5c36';
-            buttonText.textContent = 'Payment Complete';
             payButton.disabled = true;
+            checkButton.disabled = true;
             
             // Auto-close after 2 seconds if opened in a popup
             if (window.opener) {
               setTimeout(() => window.close(), 2000);
             }
-            return true;
+          } else {
+            // Start periodic payment status checking
+            startStatusChecking();
           }
-          return false;
+          
+        } catch (error) {
+          console.error('Error fetching payment details:', error);
+          showError(`Could not fetch payment details: ${error.message}`);
+        }
+      }
+      
+      // Connect to MetaMask
+      async function connectMetaMask() {
+        try {
+          metamaskButton.disabled = true;
+          metamaskLoader.style.display = 'inline-block';
+          metamaskText.textContent = 'Connecting...';
+          
+          // Request account access
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          const account = accounts[0];
+          
+          if (!account) {
+            throw new Error('No accounts found or access denied');
+          }
+          
+          // Update button text
+          metamaskText.textContent = 'Send Payment';
+          metamaskLoader.style.display = 'none';
+          metamaskButton.disabled = false;
+          
+          // Update event listener to send payment
+          metamaskButton.removeEventListener('click', connectMetaMask);
+          metamaskButton.addEventListener('click', () => sendPaymentViaMetaMask(account));
+          
+          showStatus(`Connected to wallet: ${account.substring(0, 6)}...${account.substring(account.length - 4)}`, 'info');
+          
+        } catch (error) {
+          console.error('MetaMask connection error:', error);
+          metamaskText.textContent = 'Connect MetaMask';
+          metamaskLoader.style.display = 'none';
+          metamaskButton.disabled = false;
+          showError(`Could not connect to MetaMask: ${error.message}`);
+        }
+      }
+      
+      // Send payment via MetaMask
+      async function sendPaymentViaMetaMask(account) {
+        try {
+          if (!walletDisplay.textContent || walletDisplay.textContent === '-') {
+            throw new Error('No recipient wallet address available');
+          }
+          
+          metamaskButton.disabled = true;
+          metamaskLoader.style.display = 'inline-block';
+          metamaskText.textContent = 'Sending...';
+          
+          // Convert amount to wei
+          const amountInWei = `0x${(parseFloat(amount) * 1e18).toString(16)}`;
+          
+          // Send transaction
+          const txHash = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{
+              from: account,
+              to: walletDisplay.textContent,
+              value: amountInWei,
+              gas: '0x5208', // 21000 gas for standard transfer
+              chainId: chain === 'base' ? '0x2105' : '0x1', // Base chain ID or Ethereum
+            }],
+          });
+          
+          // Show success message
+          showStatus(`Transaction sent! Hash: ${txHash.substring(0, 10)}...`, 'success');
+          metamaskText.textContent = 'Payment Sent';
+          
+          // Check payment status after a delay
+          setTimeout(checkPaymentStatus, 5000);
+          
+        } catch (error) {
+          console.error('MetaMask payment error:', error);
+          metamaskText.textContent = 'Retry Payment';
+          metamaskLoader.style.display = 'none';
+          metamaskButton.disabled = false;
+          showError(`Payment failed: ${error.message}`);
+        }
+      }
+      
+      // Check payment status
+      async function checkPaymentStatus() {
+        try {
+          // Show loading state
+          checkButton.disabled = true;
+          checkLoader.style.display = 'inline-block';
+          checkText.textContent = 'Checking...';
+          statusText.textContent = 'Checking...';
+          
+          const response = await fetch(`/payment/status/${paymentId}?userId=${encodeURIComponent(userId || '')}`);
+          const result = await response.json();
+          
+          if (result.paid) {
+            // Payment verified
+            showStatus('Payment verified successfully!', 'success');
+            statusText.textContent = 'Completed';
+            statusText.style.color = '#0a5c36';
+            buttonText.textContent = 'Payment Complete';
+            payButton.disabled = true;
+            checkButton.disabled = true;
+            metamaskButton.disabled = true;
+            
+            // Stop periodic checking
+            if (window.statusCheckInterval) {
+              clearInterval(window.statusCheckInterval);
+            }
+            
+            // Auto-close after 2 seconds if opened in a popup
+            if (window.opener) {
+              // Notify parent window
+              window.opener.postMessage({ 
+                type: 'paymentComplete', 
+                paymentId,
+                userId: userId,
+                success: true
+              }, window.location.origin);
+              
+              setTimeout(() => window.close(), 2000);
+            }
+            return true;
+          } else {
+            // Payment not yet verified
+            showStatus('Payment not yet verified. If you already paid, please wait a moment for the transaction to be confirmed.', 'info');
+            statusText.textContent = 'Pending';
+            checkText.textContent = 'Check Payment Status';
+            checkLoader.style.display = 'none';
+            checkButton.disabled = false;
+            return false;
+          }
         } catch (error) {
           console.error('Error checking payment status:', error);
+          showError(`Payment status check failed: ${error.message}`);
+          checkText.textContent = 'Check Payment Status';
+          checkLoader.style.display = 'none';
+          checkButton.disabled = false;
           return false;
         }
+      }
+      
+      // Start periodic payment status checking
+      function startStatusChecking() {
+        // Check immediately
+        checkPaymentStatus();
+        
+        // Check every 15 seconds
+        window.statusCheckInterval = setInterval(checkPaymentStatus, 15000);
+        
+        // Clear interval when window is closed
+        window.addEventListener('beforeunload', () => {
+          if (window.statusCheckInterval) {
+            clearInterval(window.statusCheckInterval);
+          }
+        });
       }
       
       async function processPayment() {
@@ -294,8 +529,8 @@
           statusEl.style.display = 'none';
           statusEl.className = 'status';
           
-          // Simulate API call
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // For the demonstration, we'll simulate a mock payment via the backend
+          // In a real implementation, this would be handled by the X402 protocol and wallet
           
           // Make the payment request
           const response = await fetch('/payment/verify', {
@@ -309,7 +544,8 @@
               userId,
               amount,
               currency,
-              proof: `mock-proof-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`
+              // Include a mock X402 proof for demonstration
+              proof: `x402-proof-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`
             })
           });
           
@@ -326,6 +562,17 @@
           statusText.style.color = '#0a5c36';
           buttonText.textContent = 'Payment Complete';
           
+          // Disable other buttons
+          checkButton.disabled = true;
+          if (metamaskButton) {
+            metamaskButton.disabled = true;
+          }
+          
+          // Stop periodic checking
+          if (window.statusCheckInterval) {
+            clearInterval(window.statusCheckInterval);
+          }
+          
           // Auto-close after 2 seconds
           setTimeout(() => {
             // Notify the parent window if we're in a popup
@@ -334,8 +581,6 @@
                 type: 'paymentComplete', 
                 paymentId,
                 userId: userId,
-                amount: amount,
-                currency: currency,
                 success: true
               }, window.location.origin);
             }

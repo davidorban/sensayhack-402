@@ -6,20 +6,40 @@
 const paymentBox = document.getElementById('payment-instructions');
 
 // Variables
-let lastPayProof = null;
-let pendingMessage = null;
+const lastPayProof = { value: null };
+const pendingMessage = { value: null };
 let paymentWindow = null;
 let paymentCheckInterval = null;
+
+// Payment configuration
+const PAYMENT_CONFIG = {
+  test: {
+    baseUrl: '/api/mock-pay',
+    type: 'mock'
+  },
+  live: {
+    baseUrl: '/payment',
+    type: 'coinbase'
+  }
+};
 
 // Open payment window and handle payment flow
 async function openPaymentWindow(paymentUrl, paymentId) {
   showInfo('Opening payment window...');
-  console.log('Opening payment window with URL:', paymentUrl);
+  console.log('Opening payment window with URL:', paymentUrl, 'Payment ID:', paymentId);
   
   // Ensure we have a session ID
   if (!currentSessionId) {
-    currentSessionId = 'sess_' + Math.random().toString(36).substring(2, 15);
-    localStorage.setItem('sessionId', currentSessionId);
+    const sessionId = `sess_${Math.random().toString(36).substring(2, 15)}`;
+    localStorage.setItem('sessionId', sessionId);
+    currentSessionId = sessionId;
+  }
+  
+  // Ensure paymentId is defined
+  if (!paymentId) {
+    console.error('No payment ID provided to openPaymentWindow');
+    showError('Error: Missing payment ID. Please try again.');
+    return;
   }
   
   // Show loading state
@@ -28,15 +48,40 @@ async function openPaymentWindow(paymentUrl, paymentId) {
   
   try {
     // Open the payment window
-    const width = 500, height = 700;
+    const width = 500;
+    const height = 700;
     const left = (window.screen.width - width) / 2;
     const top = (window.screen.height - height) / 2;
     
-    const paymentWindow = window.open(
-      paymentUrl + (paymentUrl.includes('?') ? '&' : '?') + 'sessionId=' + encodeURIComponent(currentSessionId),
+    // Get current payment mode configuration
+    const paymentConfig = window.paymentMode?.getPaymentConfig?.() || {
+      isTestMode: true,
+      baseUrl: '/api/mock-pay',
+      type: 'mock'
+    };
+    
+    // Create URL object and add parameters
+    const url = new URL(paymentUrl, window.location.origin);
+    
+    // Add test mode parameter if in test mode
+    if (paymentConfig.isTestMode) {
+      url.searchParams.set('test', 'true');
+    }
+    
+    // Add session ID and payment ID
+    url.searchParams.set('sessionId', currentSessionId);
+    url.searchParams.set('paymentId', paymentId);
+    
+    const fullUrl = url.toString();
+    
+    // Open the payment window
+    paymentWindow = window.open(
+      fullUrl,
       'paymentWindow',
       `width=${width},height=${height},top=${top},left=${left},menubar=no,toolbar=no,location=no,status=no`
     );
+    
+    console.log(`Opening ${paymentConfig.isTestMode ? 'test' : 'live'} payment window:`, fullUrl);
     
     if (!paymentWindow) {
       throw new Error('Popup was blocked. Please allow popups for this site and try again.');

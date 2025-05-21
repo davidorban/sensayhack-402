@@ -4,6 +4,8 @@
 
 // Initialize the chat when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+  // Payment mode is loaded and initialized via script tag
+  
   // Initialize chat interface
   initChat();
   
@@ -12,6 +14,15 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Log initialization
   console.log('Frontend initialized. Ready to chat!');
+  console.log('Payment mode:', window.paymentMode.getMode());
+  
+  // Listen for payment mode changes
+  window.addEventListener('paymentModeChanged', (event) => {
+    console.log('Mode change event received:', event.detail);
+    console.log('Payment mode:', event.detail.paymentTestMode ? 'test' : 'live');
+    console.log('Replica mode:', event.detail.replicaTestMode ? 'test' : 'live');
+    // The next message being sent will use the updated endpoint based on replica mode
+  });
 });
 
 // Set up event listeners
@@ -20,7 +31,7 @@ function setupEventListeners() {
   const sendButton = document.getElementById('send-button');
   
   // Handle Enter key press (but allow Shift+Enter for new lines)
-  messageInput.addEventListener('keydown', function(e) {
+  messageInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();

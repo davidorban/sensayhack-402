@@ -2,11 +2,40 @@
 import crypto from 'node:crypto';
 import { sessionStore } from './session-store.js';
 import { logger } from '../utils/logger.js';
+import config from '../config/index.js';
 
 /**
  * Service for handling payments
  */
 export class PaymentService {
+  /**
+   * Get payment details including wallet address and QR code
+   * @param {string} paymentId - Payment ID
+   * @param {string} userId - User ID
+   * @returns {Object} - Payment details
+   */
+  static getPaymentDetails(paymentId, userId) {
+    // Check if payment is in pending payments
+    if (sessionStore.isPaymentPending(paymentId)) {
+      return sessionStore.getPendingPayment(paymentId);
+    }
+    
+    // Check if payment is already verified
+    if (sessionStore.hasReceipt(paymentId)) {
+      const receipt = sessionStore.getReceipt(paymentId);
+      return {
+        ...receipt,
+        status: 'completed'
+      };
+    }
+    
+    // Payment not found
+    return { 
+      status: 'error', 
+      error: 'Payment not found' 
+    };
+  }
+  
   /**
    * Generate a unique payment ID
    * @returns {string} - Payment ID
@@ -21,20 +50,16 @@ export class PaymentService {
    * @returns {Object} - Payment requirement details
    */
   static checkIfPaymentRequired(userSession) {
-    // In a real app, implement your payment logic here
-    // For demo, require payment every 3 messages
+    // For the demo, require payment on first message
     const messageCount = userSession.messageCount || 0;
     
-    if (messageCount > 0 && messageCount % 3 === 0) {
-      return {
-        required: true,
-        amount: 0.01, // $0.01 for demo
-        reason: 'Periodic payment required',
-        messageCount
-      };
-    }
-    
-    return { required: false };
+    // Always require payment for demonstration purposes
+    return {
+      required: true,
+      amount: 0.01, // $0.01 for demo
+      reason: 'Payment required for demonstration',
+      messageCount
+    };
   }
   
   /**
@@ -43,26 +68,73 @@ export class PaymentService {
    * @param {string} messageId - Message ID
    * @param {number} amount - Payment amount
    * @param {string} currency - Payment currency
-   * @returns {Object} - Payment request details
+   * @returns {Promise<Object>} - Payment request details
    */
-  static createPaymentRequest(userId, messageId, amount = 0.01, currency = 'USD') {
+  static async createPaymentRequest(userId, messageId, amount = 0.01, currency = 'USD') {
     const paymentId = this.generatePaymentId();
+    const isMock = config.mockPayment.enabled;
+    
     const paymentDetails = {
       userId,
-      timestamp: new Date(),
-      messageId,
+      paymentId,
       amount,
       currency,
-      reason: 'Chat message processing'
+      status: 'pending',
+      timestamp: new Date().toISOString(),
+      isMock,
+      messageId,
+      reason: 'Chat message processing',
+      paymentType: isMock ? 'mock' : 'x402'
     };
-    
-    // Store in pending payments
+
+    // Store in pending payments first to ensure it's available for verification
     sessionStore.addPendingPayment(paymentId, paymentDetails);
     
-    // Log the payment request
-    logger.info(`Payment required - User: ${userId}, MessageID: ${messageId}, PaymentID: ${paymentId}`);
-    
-    return { paymentId, ...paymentDetails };
+    try {
+      if (isMock) {
+        // Mock payment flow
+        paymentDetails.paymentHtml = `/payment.html?paymentId=${paymentId}&userId=${encodeURIComponent(userId)}`;
+        paymentDetails.walletAddress = config.mockPayment.walletAddress;
+        paymentDetails.instructions = 'This is a mock payment. Use the mock payment endpoint to simulate payment.';
+      } else {
+        // X402 payment flow
+        const coinbaseService = (await import('./coinbase-service.js')).CoinbaseService;
+        const paymentData = await coinbaseService.generatePaymentUrl(userId, messageId);
+        
+        // Update payment details with X402 information
+        paymentDetails.paymentUrl = paymentData.payment_url;
+        paymentDetails.qrCode = paymentData.qr_code;
+        paymentDetails.walletAddress = paymentData.wallet_address;
+        paymentDetails.asset = paymentData.asset;
+        paymentDetails.chain = paymentData.chain;
+        paymentDetails.invoiceId = paymentData.invoice_id;
+        paymentDetails.verificationUrl = `/payment/verify?paymentId=${paymentId}`;
+        paymentDetails.instructions = 'Scan the QR code with your wallet app to complete the payment';
+        
+        // Add X402 protocol-specific headers
+        paymentDetails.x402 = {
+          Pay: paymentData.payment_url,
+          "Pay-Asset": paymentData.asset,
+          "Pay-Amount": paymentData.amount,
+          "Pay-Recipient": paymentData.wallet_address,
+          "Pay-Chain": paymentData.chain,
+          "Pay-Memo": `msg_${messageId}`
+        };
+        
+        // Update the pending payment with the new details
+        sessionStore.updatePendingPayment(paymentId, paymentDetails);
+      }
+      
+      // Log the payment request
+      logger.info(`Payment required - Mode: ${isMock ? 'MOCK' : 'X402'}, User: ${userId}, MessageID: ${messageId}, PaymentID: ${paymentId}`);
+      
+      return { paymentId, ...paymentDetails };
+    } catch (error) {
+      // Clean up the pending payment if there was an error
+      sessionStore.deletePendingPayment(paymentId);
+      logger.error('Failed to create payment request:', error);
+      throw new Error('Failed to create payment request');
+    }
   }
   
   /**

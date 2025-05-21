@@ -2,48 +2,78 @@ import axios from 'axios';
 import { logger } from '../utils/logger.js';
 import { config } from '../utils/config.js';
 import { sessionStore } from './session-store.js';
+import QRCode from 'qrcode';
 
 export class CoinbaseService {
   /**
-   * Generate a payment URL using Coinbase CDP
+   * Generate a payment URL using X402 protocol
    * @param {string} userId - The user ID
    * @param {string} messageId - The message ID
-   * @returns {Promise<string>} The payment URL
+   * @returns {Promise<Object>} The payment URL and QR code
    */
   static async generatePaymentUrl(userId, messageId) {
     try {
-      const response = await axios.post(
-        `${config.coinbase.apiUrl}/v1/payments`,
-        {
-          chain: config.coinbase.chain,
-          asset: config.coinbase.asset,
-          amount: config.coinbase.paymentAmount,
-          metadata: {
-            user_id: userId,
-            message_id: messageId
-          },
-          expires_in: config.coinbase.paymentExpiry
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${config.coinbase.apiKey}`,
-            'Content-Type': 'application/json'
-          }
+      // In a production environment, this would be a call to Coinbase API
+      // For demonstration, we'll create a direct X402 payment link to the wallet
+      
+      // Get the wallet address from config
+      const walletAddress = config.sensay.walletAddress || '0x0000000000000000000000000000000000000000';
+      const amount = config.coinbase.paymentAmount;
+      const asset = config.coinbase.asset;
+      const chain = config.coinbase.chain;
+      
+      // Generate a unique invoice ID
+      const invoice_id = `inv_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+      
+      // Create the payment URL
+      // Format: ethereum:<address>@<chain>?value=<amount>&asset=<asset>&memo=<memo>
+      const payment_url = `ethereum:${walletAddress}@${chain}?value=${amount}&asset=${asset}&memo=msg_${messageId}`;
+      
+      // Generate QR code
+      const qrCodeDataURL = await QRCode.toDataURL(payment_url, {
+        errorCorrectionLevel: 'M',
+        margin: 2,
+        width: 300,
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
         }
-      );
-
-      const { payment_url, invoice_id } = response.data;
+      });
       
       // Store the invoice ID in the session
       sessionStore.updatePaymentInfo(userId, {
         invoiceId: invoice_id,
         status: 'pending',
-        amount: config.coinbase.paymentAmount,
-        asset: config.coinbase.asset,
-        timestamp: new Date().toISOString()
+        amount: amount,
+        asset: asset,
+        chain: chain,
+        walletAddress: walletAddress,
+        qrCode: qrCodeDataURL,
+        paymentUrl: payment_url,
+        timestamp: new Date().toISOString(),
+        messageId: messageId,
+        expiresAt: new Date(Date.now() + (config.coinbase.paymentExpiry * 1000)).toISOString()
       });
 
-      return payment_url;
+      logger.info('Generated X402 payment URL:', {
+        userId,
+        messageId,
+        invoiceId: invoice_id,
+        walletAddress,
+        amount,
+        asset,
+        chain
+      });
+
+      return {
+        payment_url,
+        invoice_id,
+        qr_code: qrCodeDataURL,
+        wallet_address: walletAddress,
+        amount,
+        asset,
+        chain
+      };
     } catch (error) {
       logger.error('Error generating payment URL:', {
         error: error.message,

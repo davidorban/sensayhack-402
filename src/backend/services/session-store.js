@@ -61,7 +61,28 @@ class SessionStore {
    * @param {Object} paymentData 
    */
   addPendingPayment(paymentId, paymentData) {
-    this.pendingPayments.set(paymentId, paymentData);
+    this.pendingPayments.set(paymentId, {
+      ...paymentData,
+      createdAt: new Date()
+    });
+  }
+  
+  /**
+   * Update an existing pending payment
+   * @param {string} paymentId 
+   * @param {Object} updates - Fields to update
+   */
+  updatePendingPayment(paymentId, updates) {
+    const existing = this.pendingPayments.get(paymentId);
+    if (existing) {
+      this.pendingPayments.set(paymentId, {
+        ...existing,
+        ...updates,
+        updatedAt: new Date()
+      });
+      return true;
+    }
+    return false;
   }
   
   /**

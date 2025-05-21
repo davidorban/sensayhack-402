@@ -15,6 +15,7 @@ import { errorHandlerMiddleware } from './middleware/error-handler.js';
 import apiRoutes from './routes/api.js';
 import paymentRoutes from './routes/payment.js';
 import debugRoutes from './routes/debug.js';
+import mockPaymentRoutes from './routes/mock-payment-routes.js';
 
 // Import utils
 import { logger } from './utils/logger.js';
@@ -96,6 +97,12 @@ app.use((req, res, next) => {
 app.use('/api', apiRoutes);
 app.use('/payment', paymentRoutes);
 app.use('/debug', debugRoutes);
+
+// Mock payment routes (only in development or when MOCK_PAYMENT_ENABLED is true)
+if (process.env.NODE_ENV === 'development' || process.env.MOCK_PAYMENT_ENABLED === 'true') {
+  app.use(mockPaymentRoutes);
+  logger.info('Mock payment routes enabled');
+}
 
 // Serve the frontend index.html for the root route
 app.get('/', (req, res) => {

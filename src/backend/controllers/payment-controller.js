@@ -4,6 +4,54 @@ import { logger } from '../utils/logger.js';
 
 export const PaymentController = {
   /**
+   * Get payment details including wallet address and QR code
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   */
+  getPaymentDetails(req, res) {
+    try {
+      const { paymentId } = req.params;
+      const userId = req.query.userId || req.session.userId;
+      
+      // Get payment details from session store
+      const paymentDetails = PaymentService.getPaymentDetails(paymentId, userId);
+      
+      if (!paymentDetails || paymentDetails.status === 'error') {
+        return res.status(404).json({
+          status: 'error',
+          error: 'Payment not found',
+          paymentId,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // Return payment details with wallet address and QR code
+      return res.json({
+        status: 'success',
+        paymentId,
+        walletAddress: paymentDetails.walletAddress,
+        qrCode: paymentDetails.qrCode,
+        amount: paymentDetails.amount,
+        asset: paymentDetails.asset,
+        chain: paymentDetails.chain,
+        status: paymentDetails.status,
+        paymentUrl: paymentDetails.paymentUrl,
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      logger.error('Error getting payment details:', error);
+      return res.status(500).json({
+        status: 'error',
+        error: 'Internal server error',
+        message: error.message,
+        timestamp: new Date().toISOString(),
+        paymentId: req.params.paymentId
+      });
+    }
+  },
+  
+  /**
    * Verify a payment
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object

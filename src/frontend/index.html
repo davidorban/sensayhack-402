@@ -6,8 +6,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sensay x402 Chat</title>
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/toggle.css">
 </head>
 <body>
+  <!-- Mode Toggles -->
+  <div class="toggle-container">
+    <table class="toggle-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Test</th>
+          <th>Live</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="row-header">Replica</td>
+          <td colspan="2" class="switch-cell">
+            <label class="switch">
+              <input type="checkbox" id="replica-mode-toggle" checked>
+              <span class="slider"></span>
+            </label>
+          </td>
+          <td class="tooltip-cell">
+            <div class="tooltip">
+              ℹ️
+              <span class="tooltiptext">Toggle between test (mock responses) and live replica</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="row-header">Payment</td>
+          <td colspan="2" class="switch-cell">
+            <label class="switch">
+              <input type="checkbox" id="payment-mode-toggle" checked>
+              <span class="slider"></span>
+            </label>
+          </td>
+          <td class="tooltip-cell">
+            <div class="tooltip">
+              ℹ️
+              <span class="tooltiptext">Toggle between test (mock payments) and live payments</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
   <h1>Pay-to-Chat with Sensay</h1>
   <div id="chat-container">
     <div id="response">Send a message to start chatting...</div>
@@ -20,6 +67,7 @@
 
   <script src="js/utils.js"></script>
   <script src="js/session.js"></script>
+  <script src="js/payment-mode.js"></script>
   <script src="js/payment.js"></script>
   <script src="js/chat.js"></script>
   <script src="js/app.js"></script>

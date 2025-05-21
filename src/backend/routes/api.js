@@ -4,7 +4,8 @@ import { ChatController } from '../controllers/chat-controller.js';
 
 const router = express.Router();
 
-// Chat endpoint
+// Chat endpoints
 router.post('/chat', ChatController.processMessage);
+router.post('/chat/test', ChatController.processTestMessage);
 
 export default router;

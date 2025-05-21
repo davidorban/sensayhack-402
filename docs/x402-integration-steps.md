@@ -22,13 +22,9 @@ Coinbase x402 enforces payment before a response is returned by requiring:
 
 ⸻
 
-3. 🔁 Replace Mock Payment Flow
+3. 🔁 Implement Production Payment Flow
 
-❌ Current Behavior
-	•	Your /chat endpoint returns 402 with a mock-pay URL
-	•	Session is verified using /mock-verify-payment
-
-✅ New Behavior
+✅ Implementation
 
 On unpaid requests, return:
 

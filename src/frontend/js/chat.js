@@ -60,7 +60,7 @@ async function handleSendMessage() {
   
   // Ensure we have a session ID
   if (!currentSessionId) {
-    currentSessionId = 'sess_' + Math.random().toString(36).substring(2, 15);
+    currentSessionId = `sess_${Math.random().toString(36).substring(2, 15)}`;
     localStorage.setItem('sessionId', currentSessionId);
   }
   
@@ -68,7 +68,7 @@ async function handleSendMessage() {
   messageInput.value = '';
   
   // Display the user's message
-  const messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+  const messageId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
   displayMessage(message, 'user', messageId);
   
   try {
@@ -101,17 +101,43 @@ async function sendMessage(message, messageId, sessionId, isRetry = false) {
     
     console.log('Sending message:', { messageId, sessionId, isRetry });
     
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Request-ID': messageId,
-        'X-Session-ID': sessionId || ''
-      },
-      body: JSON.stringify(requestBody)
-    });
+    let response;
+    let responseData;
     
-    const responseData = await response.json();
+    // Check if we should use test replica
+    // Ensure window.paymentMode is fully initialized before accessing useTestReplica
+    const useTestReplica = window.paymentMode && typeof window.paymentMode.useTestReplica === 'function' 
+      ? window.paymentMode.useTestReplica() 
+      : true;
+    console.log('Using test replica:', useTestReplica);
+    
+    // Make API call with appropriate endpoint based on replica mode
+    const apiUrl = useTestReplica ? '/api/chat/test' : '/api/chat';
+    
+    try {
+      response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Request-ID': messageId,
+          'X-Session-ID': sessionId || '',
+          'X-Test-Mode': useTestReplica ? 'true' : 'false'
+        },
+        body: JSON.stringify({
+          ...requestBody,
+          metadata: {
+            ...requestBody.metadata,
+            testMode: useTestReplica
+          }
+        })
+      });
+      
+      responseData = await response.json();
+    } catch (e) {
+      console.error('Error making API request:', e);
+      throw new Error('Failed to connect to the server');
+    }
+    
     console.log('Server response:', { status: response.status, data: responseData });
     
     if (response.status === 200) {
@@ -147,26 +173,53 @@ async function sendMessage(message, messageId, sessionId, isRetry = false) {
       // Payment required
       console.log('Payment required:', responseData);
       
+      // Ensure we have a valid payment ID
+      const paymentId = responseData.paymentId || `pay_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+      
       // Store the pending message
       if (sessionId) {
         const pendingMessages = JSON.parse(sessionStorage.getItem(`pending_${sessionId}`) || '[]');
         pendingMessages.push({
           messageId,
           content: message,
-          paymentId: responseData.paymentId,
+          paymentId: paymentId,
           timestamp: new Date().toISOString()
         });
         sessionStorage.setItem(`pending_${sessionId}`, JSON.stringify(pendingMessages));
       }
       
       // Show payment UI with the payment URL from the server
-      if (responseData.paymentUrl) {
-        // Open the payment window with the provided URL
-        const paymentWindowOpened = openPaymentWindow(responseData.paymentUrl, responseData.paymentId);
+      // Check if we have a payment URL or HTML page link
+      const paymentUrlStr = responseData.paymentUrl || responseData.paymentHtml;
+      
+      if (paymentUrlStr) {
+        // Get payment config based on current mode
+        const paymentConfig = window.paymentMode?.getPaymentConfig?.() || {
+          isTestMode: true,
+          baseUrl: '/api/mock-pay',
+          type: 'mock'
+        };
         
-        if (!paymentWindowOpened) {
-          showError('Could not open payment window. Please allow popups and try again.');
-          throw new Error('Failed to open payment window');
+        // Ensure we have all required payment details
+        const paymentAmount = responseData.amount || '0.01'; // Default to 0.01 if amount is not provided
+        const paymentCurrency = responseData.currency || responseData.asset || 'USD'; // Get currency
+        
+        // Add test mode parameter to payment URL if in test mode
+        const paymentUrl = new URL(paymentUrlStr, window.location.origin);
+        if (paymentConfig.isTestMode) {
+          paymentUrl.searchParams.set('test', 'true');
+        }
+        
+        // Store the payment ID in session storage for later reference
+        if (sessionId) {
+          const paymentData = {
+            paymentId,
+            amount: paymentAmount,
+            currency: paymentCurrency,
+            messageId,
+            timestamp: new Date().toISOString()
+          };
+          sessionStorage.setItem(`payment_${paymentId}`, JSON.stringify(paymentData));
         }
         
         // Show payment information
@@ -174,24 +227,45 @@ async function sendMessage(message, messageId, sessionId, isRetry = false) {
           <div class="payment-info">
             <p>🔒 This message requires a small payment to process.</p>
             <p>Click the button below to complete the payment (test mode).</p>
-            <p>Amount: <strong>${responseData.amount} ${responseData.currency}</strong></p>
+            <p>Amount: <strong>${paymentAmount} ${paymentCurrency}</strong></p>
             <p>Message ID: <code>${messageId}</code></p>
-            <p>Payment ID: <code>${responseData.paymentId}</code></p>
+            <p>Payment ID: <code>${paymentId}</code></p>
             <p>Session: <code>${sessionId ? `${sessionId.substring(0, 8)}...` : 'unknown'}</code></p>
             <div class="payment-actions">
               <button id="open-payment-btn" class="btn btn-primary">Open Payment Window</button>
               <button id="check-payment-btn" class="btn btn-secondary">Check Payment Status</button>
             </div>
+            <p class="payment-note">Note: This is a test payment. No real money will be charged.</p>
           </div>
         `;
         
         // Add event listeners for the buttons
         document.getElementById('open-payment-btn')?.addEventListener('click', () => {
-          openPaymentWindow(responseData.paymentUrl, responseData.paymentId);
+          try {
+            const paymentUrlToUse = responseData.paymentUrl || responseData.paymentHtml;
+            if (!paymentUrlToUse) {
+              throw new Error('No payment URL available');
+            }
+            // Ensure URL is well-formed and log info
+            const paymentURL = new URL(paymentUrlToUse, window.location.origin).toString();
+            console.log('Opening payment window with URL:', paymentURL, 'Payment ID:', paymentId);
+            openPaymentWindow(paymentURL, paymentId);
+          } catch (error) {
+            console.error('Error opening payment window:', error);
+            showError(`Failed to open payment window: ${error.message}`);
+          }
         });
         
         document.getElementById('check-payment-btn')?.addEventListener('click', () => {
-          checkPaymentStatus(responseData.paymentId, sessionId);
+          try {
+            if (!paymentId) {
+              throw new Error('No payment ID available');
+            }
+            checkPaymentStatus(paymentId, sessionId);
+          } catch (error) {
+            console.error('Error checking payment status:', error);
+            showError(`Failed to check payment status: ${error.message}`);
+          }
         });
         
         paymentBox.style.display = 'block';
@@ -215,7 +289,7 @@ async function sendMessage(message, messageId, sessionId, isRetry = false) {
       
       const errorDiv = document.createElement('div');
       errorDiv.className = 'status-error';
-      errorDiv.innerHTML = `<p>Failed to send message.</p>`;
+      errorDiv.innerHTML = '<p>Failed to send message.</p>';
       errorDiv.appendChild(retryButton);
       
       responseBox.appendChild(errorDiv);
