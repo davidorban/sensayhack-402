@@ -258,7 +258,7 @@
       
       async function checkPaymentStatus() {
         try {
-          const response = await fetch(`/payment-status/${paymentId}?userId=${encodeURIComponent(userId || '')}`);
+          const response = await fetch(`/payment/status/${paymentId}?userId=${encodeURIComponent(userId || '')}`);
           const result = await response.json();
           
           if (result.paid) {
@@ -298,7 +298,7 @@
           await new Promise(resolve => setTimeout(resolve, 2000));
           
           // Make the payment request
-          const response = await fetch('/mock-verify-payment', {
+          const response = await fetch('/payment/verify', {
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',
