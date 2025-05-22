@@ -2,99 +2,331 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src *; frame-src *; base-uri 'self'; form-action 'self'; child-src *;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdn.ethers.io; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src *; frame-src *; base-uri 'self'; form-action 'self'; child-src *;" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Sensay x402 Chat - Test Environment</title>
+  <title>Replica Payment - Test Environment</title>
   <link rel="stylesheet" href="css/styles.css">
   <style>
+    :root {
+      --test-color: #ffc107;
+      --test-dark: #e0a800;
+      --test-light: #fff8e1;
+      --test-text: #5d4037;
+      --test-border: #ffd54f;
+    }
+    
     .environment-badge {
       position: fixed;
       top: 10px;
       right: 10px;
-      background-color: #ffc107;
-      color: #333;
+      background-color: var(--test-color);
+      color: var(--test-text);
       padding: 8px 16px;
       border-radius: 20px;
       font-weight: bold;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
       z-index: 1000;
-      border: 2px solid #e0a800;
+      border: 2px solid var(--test-dark);
+      text-transform: uppercase;
+      font-size: 0.9em;
+      letter-spacing: 1px;
     }
     
     .back-button {
       position: fixed;
       top: 10px;
       left: 10px;
-      background-color: #f0f0f0;
+      background-color: #f5f5f5;
       color: #333;
       padding: 8px 16px;
       border-radius: 20px;
-      font-weight: bold;
+      font-weight: 600;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
       z-index: 1000;
-      border: 2px solid #ddd;
+      border: 2px solid #e0e0e0;
       text-decoration: none;
-      transition: background-color 0.3s ease;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
     
     .back-button:hover {
       background-color: #e0e0e0;
+      transform: translateY(-1px);
     }
     
-    .mode-info {
-      background-color: #fff3cd;
+    .test-banner {
+      background: linear-gradient(135deg, var(--test-light) 0%, #fff3e0 100%);
+      border-left: 5px solid var(--test-border);
+      border-radius: 8px;
+      padding: 15px 20px;
+      margin: 0 0 25px 0;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    }
+    
+    .test-banner h2 {
+      margin: 0 0 10px 0;
+      color: var(--test-text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .test-banner p {
+      margin: 5px 0;
+      color: var(--test-text);
+      line-height: 1.5;
+    }
+    
+    .test-features {
+      margin: 15px 0 0 0;
+      padding: 0 0 0 20px;
+    }
+    
+    .test-features li {
+      margin-bottom: 8px;
+      position: relative;
+    }
+    
+    .test-features li:before {
+      content: "•";
+      color: var(--test-dark);
+      font-weight: bold;
+      position: absolute;
+      left: -15px;
+    }
+    
+    .dev-tools {
+      background-color: #f8f9fa;
       border-radius: 8px;
       padding: 15px;
-      margin-bottom: 20px;
-      border-left: 4px solid #ffc107;
+      margin: 20px 0;
+      border: 1px solid #e9ecef;
     }
     
-    .mode-info h3 {
+    .dev-tools h3 {
       margin-top: 0;
-      color: #856404;
+      color: #333;
+      border-bottom: 1px solid #dee2e6;
+      padding-bottom: 8px;
     }
     
-    .mode-info p {
-      margin-bottom: 0;
-      color: #856404;
+    .form-group {
+      margin-bottom: 15px;
     }
     
-    .note {
-      font-style: italic;
-      font-weight: bold;
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #495057;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .btn {
+      display: inline-block;
+      font-weight: 500;
+      text-align: center;
+      white-space: nowrap;
+      vertical-align: middle;
+      user-select: none;
+      border: 1px solid transparent;
+      padding: 8px 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      border-radius: 4px;
+      transition: all 0.15s ease-in-out;
+      cursor: pointer;
+    }
+    
+    .btn-primary {
+      color: #000;
+      background-color: var(--test-color);
+      border-color: var(--test-dark);
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--test-dark);
+      transform: translateY(-1px);
+    }
+    
+    .btn-outline-secondary {
+      color: #6c757d;
+      background-color: transparent;
+      border-color: #6c757d;
+    }
+    
+    .btn-outline-secondary:hover {
+      background-color: #6c757d;
+      color: white;
+    }
+    
+    .debug-console {
+      background-color: #2d2d2d;
+      color: #e0e0e0;
+      border-radius: 4px;
+      padding: 15px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 15px;
+    }
+    
+    .debug-entry {
+      margin: 5px 0;
+      padding: 3px 0;
+      border-bottom: 1px solid #3d3d3d;
+    }
+    
+    .debug-timestamp {
+      color: #888;
+      margin-right: 10px;
+      font-size: 0.9em;
+    }
+    
+    .debug-message {
+      color: #e0e0e0;
+    }
+    
+    .debug-info { color: #4fc1ff; }
+    .debug-warning { color: #ffcb6b; }
+    .debug-error { color: #ff6b6b; }
+    .debug-success { color: #c3e88d; }
+    
+    .test-scenario {
+      background-color: #e9ecef;
+      border-radius: 4px;
+      padding: 10px 15px;
+      margin: 10px 0;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .test-scenario:hover {
+      background-color: #dee2e6;
+      transform: translateX(3px);
+    }
+    
+    .test-scenario h4 {
+      margin: 0 0 5px 0;
+      color: #343a40;
+    }
+    
+    .test-scenario p {
+      margin: 0;
+      font-size: 0.9em;
+      color: #6c757d;
+    }
+    
+    @media (max-width: 768px) {
+      .environment-badge {
+        top: auto;
+        bottom: 10px;
+        right: 10px;
+      }
+      
+      .back-button {
+        top: 10px;
+        left: 10px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="environment-badge">TEST ENVIRONMENT</div>
+  <div class="environment-badge">🛠️ Test Environment</div>
   <a href="index.html" class="back-button">← Back to Home</a>
   
-  <h1>Pay-to-Chat with Sensay</h1>
-  
-  <div class="layout-container">
-    <!-- Left side: Chat container -->
-    <div class="chat-column">
-      <div class="mode-info">
-        <h3>Test Environment</h3>
-        <p>You are using the test environment with mock AI responses and simulated payments. <span class="note">No real transactions will occur.</span></p>
-      </div>
+  <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+    <div class="test-banner">
+      <h2>🧪 Test Environment</h2>
+      <p>This is a safe testing environment with mock AI responses and simulated payments. No real transactions will occur.</p>
       
-      <div id="chat-container">
-        <div id="response">Send a message to start chatting with the test AI...</div>
-        <div id="input-area">
-          <textarea id="message-input" placeholder="Type your message..."></textarea>
-          <button id="send-button">Send</button>
-        </div>
-      </div>
+      <ul class="test-features">
+        <li>Test payment flows without spending real cryptocurrency</li>
+        <li>Simulate different API responses and error conditions</li>
+        <li>View detailed debug information for development</li>
+        <li>Reset the test environment at any time</li>
+      </ul>
     </div>
     
-    <!-- Right side: Controls and Payment -->
-    <div class="controls-column">
-      <!-- Payment Instructions -->
-      <div id="payment-instructions"></div>
+    <div class="layout-container">
+      <!-- Left side: Chat container -->
+      <div class="chat-column">
+        <div id="chat-container">
+          <div id="response">
+            <div class="system-message">
+              <h3>Welcome to the Sensay x402 Test Environment</h3>
+              <p>This is a development environment where you can test the payment flow and AI interactions without using real cryptocurrency.</p>
+              <p>To get started, try sending a message or select a test scenario from the right panel.</p>
+            </div>
+          </div>
+          <div id="input-area">
+            <textarea id="message-input" placeholder="Type your test message here..."></textarea>
+            <button id="send-button" class="btn btn-primary">Send Message</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right side: Test Controls and Debug -->
+      <div class="controls-column">
+        <div class="dev-tools">
+          <h3>Test Scenarios</h3>
+          
+          <div class="test-scenario" onclick="runTestScenario('success')">
+            <h4>Successful Payment</h4>
+            <p>Simulate a successful payment flow</p>
+          </div>
+          
+          <div class="test-scenario" onclick="runTestScenario('payment-required')">
+            <h4>Payment Required</h4>
+            <p>Test the payment request flow</p>
+          </div>
+          
+          <div class="test-scenario" onclick="runTestScenario('error')">
+            <h4>API Error</h4>
+            <p>Simulate an API error response</p>
+          </div>
+          
+          <div class="test-scenario" onclick="runTestScenario('timeout')">
+            <h4>Timeout</h4>
+            <p>Test request timeout handling</p>
+          </div>
+          
+          <div class="form-group" style="margin-top: 20px;">
+            <label for="response-delay">Response Delay (ms):</label>
+            <input type="number" id="response-delay" class="form-control" value="1000" min="0" max="10000">
+          </div>
+          
+          <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button id="reset-chat" class="btn btn-outline-secondary" style="flex: 1;">Reset Chat</button>
+            <button id="toggle-debug" class="btn btn-outline-secondary">Debug</button>
+          </div>
+          
+          <div id="debug-console" class="debug-console" style="display: none;">
+            <div class="debug-entry">
+              <span class="debug-timestamp">[12:00:00]</span>
+              <span class="debug-message debug-info">Test environment initialized</span>
+            </div>
+          </div>
+        </div>
+        
+        <div id="payment-instructions" class="dev-tools">
+          <h3>Payment Instructions</h3>
+          <p>No payment required yet. Send a message to start the test flow.</p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -102,7 +334,83 @@
     // Force test mode settings
     localStorage.setItem('paymentTestMode', 'true');
     localStorage.setItem('replicaTestMode', 'true');
+    
+    // Debug logging function
+    function logDebug(message, type = 'info') {
+      const debugConsole = document.getElementById('debug-console');
+      if (!debugConsole) return;
+      
+      const timestamp = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = 'debug-entry';
+      entry.innerHTML = `
+        <span class="debug-timestamp">[${timestamp}]</span>
+        <span class="debug-message debug-${type}">${message}</span>
+      `;
+      
+      debugConsole.appendChild(entry);
+      debugConsole.scrollTop = debugConsole.scrollHeight;
+    }
+    
+    // Toggle debug console
+    document.getElementById('toggle-debug').addEventListener('click', function() {
+      const debugConsole = document.getElementById('debug-console');
+      debugConsole.style.display = debugConsole.style.display === 'none' ? 'block' : 'none';
+      logDebug('Debug console toggled');
+    });
+    
+    // Test scenario runner
+    function runTestScenario(scenario) {
+      logDebug(`Running test scenario: ${scenario}`, 'info');
+      
+      switch(scenario) {
+        case 'success':
+          // Simulate successful payment flow
+          logDebug('Simulating successful payment...', 'info');
+          // Add test implementation here
+          break;
+          
+        case 'payment-required':
+          // Simulate payment required
+          logDebug('Simulating payment required...', 'warning');
+          // Add test implementation here
+          break;
+          
+        case 'error':
+          // Simulate API error
+          logDebug('Simulating API error...', 'error');
+          // Add test implementation here
+          break;
+          
+        case 'timeout':
+          // Simulate timeout
+          logDebug('Simulating request timeout...', 'warning');
+          // Add test implementation here
+          break;
+      }
+    }
+    
+    // Initialize test environment
+    document.addEventListener('DOMContentLoaded', function() {
+      logDebug('Test environment initialized', 'success');
+      
+      // Add event listeners for test buttons
+      document.getElementById('reset-chat').addEventListener('click', function() {
+        if (confirm('Are you sure you want to reset the chat?')) {
+          const responseDiv = document.getElementById('response');
+          responseDiv.innerHTML = `
+            <div class="system-message">
+              <h3>Chat Reset</h3>
+              <p>The chat has been reset. You can start a new conversation.</p>
+            </div>
+          `;
+          logDebug('Chat reset', 'info');
+        }
+      });
+    });
   </script>
+  
+  <!-- Core Application Scripts -->
   <script src="js/compat.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/session.js"></script>

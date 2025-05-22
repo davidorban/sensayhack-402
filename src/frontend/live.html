@@ -2,113 +2,953 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src *; frame-src *; base-uri 'self'; form-action 'self'; child-src *;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdn.ethers.io; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src *; frame-src *; base-uri 'self'; form-action 'self'; child-src *;" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <title>Sensay x402 Chat - Live Environment</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
   <style>
+    :root {
+      --primary-color: #4a90e2;
+      --secondary-color: #3a80d2;
+      --success-color: #28a745;
+      --danger-color: #dc3545;
+      --warning-color: #ffc107;
+      --light-color: #f8f9fa;
+      --dark-color: #343a40;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+      padding: 20px;
+    }
+    
     .environment-badge {
       position: fixed;
       top: 10px;
       right: 10px;
-      background-color: #4a90e2;
+      background-color: var(--danger-color);
       color: white;
       padding: 8px 16px;
       border-radius: 20px;
       font-weight: bold;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
       z-index: 1000;
-      border: 2px solid #3a80d2;
+      border: 2px solid #c82333;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
     
     .back-button {
       position: fixed;
       top: 10px;
       left: 10px;
-      background-color: #f0f0f0;
-      color: #333;
+      background-color: #f8f9fa;
+      color: #2c3e50;
       padding: 8px 16px;
       border-radius: 20px;
-      font-weight: bold;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      font-weight: 600;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       z-index: 1000;
-      border: 2px solid #ddd;
+      border: 1px solid #dee2e6;
       text-decoration: none;
-      transition: background-color 0.3s ease;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
     
     .back-button:hover {
-      background-color: #e0e0e0;
+      background-color: #e9ecef;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
     }
     
     .mode-info {
-      background-color: #f8f9fa;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 20px;
-      border-left: 4px solid #4a90e2;
+      background-color: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 24px;
+      border-left: 4px solid var(--primary-color);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     
     .mode-info h3 {
       margin-top: 0;
-      color: #2c3e50;
+      color: var(--dark-color);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1.4rem;
+      margin-bottom: 10px;
     }
     
     .mode-info p {
-      margin-bottom: 0;
+      margin: 8px 0 0 0;
       color: #495057;
+      line-height: 1.5;
     }
     
     .warning {
-      color: #dc3545;
-      font-weight: bold;
+      color: var(--danger-color);
+      font-weight: 600;
+    }
+    
+    .success {
+      color: var(--success-color);
+    }
+    
+    /* Payment Container */
+    .payment-container {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+      border: 1px solid #e9ecef;
+    }
+    
+    .payment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e9ecef;
+    }
+    
+    .payment-amount {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--dark-color);
+    }
+    
+    .payment-methods {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin: 20px 0;
+    }
+    
+    .payment-method {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: white;
+    }
+    
+    .payment-method:hover {
+      border-color: var(--primary-color);
+      box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2);
+    }
+    
+    .payment-method.active {
+      border-color: var(--primary-color);
+      background-color: rgba(74, 144, 226, 0.05);
+    }
+    
+    .payment-method-icon {
+      font-size: 24px;
+      margin-right: 12px;
+      color: var(--primary-color);
+    }
+    
+    .payment-method-details {
+      flex: 1;
+    }
+    
+    .payment-method-title {
+      font-weight: 600;
+      margin: 0 0 4px 0;
+    }
+    
+    .payment-method-description {
+      font-size: 14px;
+      color: #6c757d;
+      margin: 0;
+    }
+    
+    /* QR Code Container */
+    .qr-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    
+    #qr-code {
+      width: 200px;
+      height: 200px;
+      margin-bottom: 16px;
+      background: white;
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+    }
+    
+    .payment-address {
+      background: white;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #dee2e6;
+      font-family: monospace;
+      word-break: break-all;
+      text-align: center;
+      margin: 12px 0;
+      font-size: 14px;
+    }
+    
+    /* Transaction Status */
+    .transaction-status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 16px 0;
+      font-weight: 500;
+    }
+    
+    .transaction-status.pending {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+    
+    .transaction-status.success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    .transaction-status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    
+    /* Buttons */
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--secondary-color);
+      transform: translateY(-1px);
+    }
+    
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--primary-color);
+      color: var(--primary-color);
+    }
+    
+    .btn-outline:hover {
+      background-color: rgba(74, 144, 226, 0.1);
+    }
+    
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+      display: inline-block;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .hidden {
+      display: none !important;
+    }
+    
+    /* Chat Interface */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 70vh;
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .message {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      line-height: 1.5;
+      position: relative;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .user-message {
+      align-self: flex-end;
+      background-color: var(--primary-color);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+    
+    .ai-message {
+      align-self: flex-start;
+      background-color: #f1f3f5;
+      color: var(--dark-color);
+      border-bottom-left-radius: 4px;
+    }
+    
+    .message-sender {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      opacity: 0.8;
+    }
+    
+    .user-message .message-sender {
+      color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .ai-message .message-sender {
+      color: #6c757d;
+    }
+    
+    .message-text {
+      word-wrap: break-word;
+    }
+    
+    .typing-dots {
+      display: inline-block;
+    }
+    
+    .typing-dots::after {
+      content: '...';
+      animation: typing 1.5s infinite;
+      display: inline-block;
+      width: 0;
+      overflow: hidden;
+      vertical-align: bottom;
+    }
+    
+    @keyframes typing {
+      0% { width: 0; }
+      33% { width: 0.5em; }
+      66% { width: 1em; }
+      100% { width: 1.5em; }
+    }
+    
+    .chat-input-container {
+      display: flex;
+      padding: 16px;
+      border-top: 1px solid #e9ecef;
+      background: #f8f9fa;
+    }
+    
+    #user-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    
+    #user-input:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25);
+    }
+    
+    #send-button {
+      margin-left: 12px;
+      padding: 0 24px;
+      border-radius: 8px;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .chat-container {
+        height: calc(100vh - 120px);
+        border-radius: 0;
+      }
+      
+      .message {
+        max-width: 90%;
+      }
+      
+      .chat-input-container {
+        padding: 12px;
+      }
+      
+      #user-input {
+        padding: 10px 14px;
+      }
+      
+      #send-button {
+        padding: 0 16px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="environment-badge">LIVE ENVIRONMENT</div>
-  <a href="index.html" class="back-button">← Back to Home</a>
+  <div class="environment-badge">Live Environment</div>
+  <a href="index.html" class="back-button">
+    <i class="fas fa-arrow-left"></i> Back to Home
+  </a>
   
-  <h1>Pay-to-Chat with Sensay</h1>
-  
-  <div class="layout-container">
-    <!-- Left side: Chat container -->
-    <div class="chat-column">
-      <div class="mode-info">
-        <h3>Live Environment</h3>
-        <p>You are using the live environment with real AI responses and actual payments. <span class="warning">Real transactions will occur.</span></p>
+  <div class="container">
+    <div class="mode-info">
+      <h3><i class="fas fa-bolt"></i> Live Payment Environment</h3>
+      <p>This is the live production environment. All interactions require real cryptocurrency payments.</p>
+      <p class="warning">
+        <i class="fas fa-exclamation-triangle"></i> 
+        Warning: You will be charged real cryptocurrency for each message.
+      </p>
+    </div>
+    
+    <!-- Payment Container -->
+    <div class="payment-container">
+      <div class="payment-header">
+        <h2>Make a Payment</h2>
+        <div class="payment-amount">0.01 USDC</div>
       </div>
       
-      <div id="chat-container">
-        <div id="response">Send a message to start chatting with the live AI...</div>
-        <div id="input-area">
-          <textarea id="message-input" placeholder="Type your message..."></textarea>
-          <button id="send-button">Send</button>
+      <!-- Payment Methods -->
+      <div class="payment-methods">
+        <div class="payment-method active" data-method="wallet">
+          <div class="payment-method-icon">
+            <i class="fab fa-ethereum"></i>
+          </div>
+          <div class="payment-method-details">
+            <h4 class="payment-method-title">Crypto Wallet</h4>
+            <p class="payment-method-description">Pay with MetaMask, Coinbase Wallet, or any Web3 wallet</p>
+          </div>
         </div>
+        
+        <div class="payment-method" data-method="qr">
+          <div class="payment-method-icon">
+            <i class="fas fa-qrcode"></i>
+          </div>
+          <div class="payment-method-details">
+            <h4 class="payment-method-title">QR Code</h4>
+            <p class="payment-method-description">Scan with any wallet to pay</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- QR Code Section -->
+      <div id="qr-section" class="hidden">
+        <div class="qr-container">
+          <div id="qr-code"></div>
+          <p>Scan this QR code with your wallet</p>
+          <div class="payment-address" id="payment-address">0x742d35Cc6634C0532925a3b844Bc454e4438f44e</div>
+          <button class="btn btn-outline" id="copy-address">
+            <i class="far fa-copy"></i> Copy Address
+          </button>
+        </div>
+      </div>
+      
+      <!-- Transaction Status -->
+      <div id="transaction-status" class="transaction-status hidden">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>Waiting for payment confirmation...</span>
+      </div>
+      
+      <!-- Payment Buttons -->
+      <div class="d-flex gap-2">
+        <button id="connect-wallet" class="btn btn-primary">
+          <i class="fas fa-wallet"></i> Connect Wallet
+        </button>
+        <button id="pay-with-qr" class="btn btn-outline">
+          <i class="fas fa-qrcode"></i> Show QR Code
+        </button>
       </div>
     </div>
     
-    <!-- Right side: Controls and Payment -->
-    <div class="controls-column">
-      <!-- Payment Instructions -->
-      <div id="payment-instructions"></div>
+    <!-- Chat Interface (initially hidden) -->
+    <div id="chat-interface" class="hidden">
+      <div class="chat-container">
+        <div id="chat-messages" class="chat-messages">
+          <!-- Messages will be added here -->
+        </div>
+        <div class="chat-input-container">
+          <input type="text" id="user-input" placeholder="Type your message..." class="form-control" />
+          <button id="send-button" class="btn btn-primary">
+            <i class="fas fa-paper-plane"></i> Send
+          </button>
+        </div>
+      </div>
     </div>
   </div>
-
+  
+  <!-- JavaScript Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
   <script>
-    // Force live mode settings
-    localStorage.setItem('paymentTestMode', 'false');
-    localStorage.setItem('replicaTestMode', 'false');
+    // Configuration
+    const CONFIG = {
+      paymentAmount: '0.01', // USDC
+      paymentToken: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC on Base
+      paymentRecipient: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e', // Replace with actual recipient
+      chainId: '0x2105', // Base Mainnet
+      rpcUrl: 'https://mainnet.base.org',
+      apiBaseUrl: 'https://api.sensay.io/v1', // Replace with actual API endpoint
+    };
+
+    // State
+    let state = {
+      currentPaymentId: null,
+      isConnected: false,
+      account: null,
+      provider: null,
+      signer: null,
+      paymentInProgress: false,
+      paymentVerified: false,
+      chatSessionId: null
+    };
+
+    // DOM Elements
+    const elements = {
+      connectWalletBtn: document.getElementById('connect-wallet'),
+      payWithQrBtn: document.getElementById('pay-with-qr'),
+      qrSection: document.getElementById('qr-section'),
+      qrCode: document.getElementById('qr-code'),
+      paymentAddress: document.getElementById('payment-address'),
+      copyAddressBtn: document.getElementById('copy-address'),
+      transactionStatus: document.getElementById('transaction-status'),
+      paymentMethods: document.querySelectorAll('.payment-method'),
+      chatInterface: document.getElementById('chat-interface'),
+      chatMessages: document.getElementById('chat-messages'),
+      userInput: document.getElementById('user-input'),
+      sendButton: document.getElementById('send-button')
+    };
+
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeEventListeners();
+      checkWalletConnection();
+    });
+
+    // Initialize event listeners
+    function initializeEventListeners() {
+      // Wallet connection
+      elements.connectWalletBtn.addEventListener('click', connectWallet);
+      
+      // QR code payment
+      elements.payWithQrBtn.addEventListener('click', toggleQrCode);
+      
+      // Copy address to clipboard
+      elements.copyAddressBtn.addEventListener('click', copyToClipboard);
+      
+      // Payment method selection
+      elements.paymentMethods.forEach(method => {
+        method.addEventListener('click', () => selectPaymentMethod(method));
+      });
+      
+      // Chat input
+      elements.sendButton.addEventListener('click', sendMessage);
+      elements.userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+      });
+      
+      // Listen for account changes
+      if (window.ethereum) {
+        window.ethereum.on('accountsChanged', handleAccountsChanged);
+        window.ethereum.on('chainChanged', handleChainChanged);
+      }
+    }
+
+    // Check if wallet is already connected
+    async function checkWalletConnection() {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          if (accounts.length > 0) {
+            await setupWeb3(accounts[0]);
+          }
+        } catch (error) {
+          console.error('Error checking wallet connection:', error);
+        }
+      }
+    }
+
+    // Connect wallet handler
+    async function connectWallet() {
+      if (!window.ethereum) {
+        alert('Please install MetaMask or another Web3 wallet to continue');
+        return;
+      }
+
+      try {
+        elements.connectWalletBtn.disabled = true;
+        elements.connectWalletBtn.innerHTML = '<div class="spinner"></div> Connecting...';
+        
+        // Request account access
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        await setupWeb3(accounts[0]);
+        
+      } catch (error) {
+        console.error('Error connecting wallet:', error);
+        showError('Failed to connect wallet. Please try again.');
+        resetConnectButton();
+      }
+    }
+
+    // Set up Web3 provider and signer
+    async function setupWeb3(account) {
+      try {
+        state.provider = new ethers.BrowserProvider(window.ethereum);
+        state.signer = await state.provider.getSigner();
+        state.account = account;
+        state.isConnected = true;
+        
+        // Update UI
+        elements.connectWalletBtn.innerHTML = `<i class="fas fa-check-circle"></i> Connected: ${shortenAddress(account)}`;
+        elements.connectWalletBtn.classList.add('connected');
+        
+        // Check network
+        await checkNetwork();
+        
+      } catch (error) {
+        console.error('Error setting up Web3:', error);
+        showError('Error setting up Web3 provider');
+        resetConnectButton();
+      }
+    }
+
+    // Check if connected to the correct network
+    async function checkNetwork() {
+      try {
+        const network = await state.provider.getNetwork();
+        if (network.chainId.toString() !== CONFIG.chainId) {
+          showError(`Please switch to Base Network (ChainID: ${parseInt(CONFIG.chainId, 10)})`);
+          return false;
+        }
+        return true;
+      } catch (error) {
+        console.error('Error checking network:', error);
+        showError('Error checking network');
+        return false;
+      }
+    }
+
+    // Handle account changes
+    function handleAccountsChanged(accounts) {
+      if (accounts.length === 0) {
+        // User disconnected wallet
+        resetWalletConnection();
+      } else if (accounts[0] !== state.account) {
+        // Account changed
+        setupWeb3(accounts[0]);
+      }
+    }
+
+    // Handle chain changes
+    async function handleChainChanged(chainId) {
+      if (chainId !== CONFIG.chainId) {
+        showError(`Please switch to Base Network (ChainID: ${parseInt(CONFIG.chainId, 10)})`);
+      } else {
+        // Chain is correct, refresh the page
+        window.location.reload();
+      }
+    }
+
+    // Reset wallet connection
+    function resetWalletConnection() {
+      state.isConnected = false;
+      state.account = null;
+      state.provider = null;
+      state.signer = null;
+      resetConnectButton();
+    }
+
+    // Reset connect button to initial state
+    function resetConnectButton() {
+      elements.connectWalletBtn.disabled = false;
+      elements.connectWalletBtn.innerHTML = '<i class="fas fa-wallet"></i> Connect Wallet';
+      elements.connectWalletBtn.classList.remove('connected');
+    }
+
+    // Toggle QR code display
+    function toggleQrCode() {
+      elements.qrSection.classList.toggle('hidden');
+      
+      if (!elements.qrSection.classList.contains('hidden')) {
+        // Generate QR code if not already generated
+        if (!elements.qrCode.hasChildNodes()) {
+          generateQrCode();
+        }
+        
+        // Update button text
+        elements.payWithQrBtn.innerHTML = '<i class="fas fa-times"></i> Hide QR Code';
+      } else {
+        elements.payWithQrBtn.innerHTML = '<i class="fas fa-qrcode"></i> Show QR Code';
+      }
+    }
+
+    // Generate QR code for payment
+    function generateQrCode() {
+      const paymentData = {
+        address: CONFIG.paymentRecipient,
+        amount: CONFIG.paymentAmount,
+        token: CONFIG.paymentToken,
+        chainId: CONFIG.chainId,
+        paymentId: generatePaymentId()
+      };
+      
+      const paymentLink = `ethereum:${CONFIG.paymentRecipient}@${CONFIG.chainId}/transfer?address=${CONFIG.paymentRecipient}&uint256=${ethers.parseUnits(CONFIG.paymentAmount, 6)}&token=${CONFIG.paymentToken}`;
+      
+      // Generate QR code
+      new QRCode(elements.qrCode, {
+        text: paymentLink,
+        width: 200,
+        height: 200,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+      
+      // Store payment ID in state
+      state.currentPaymentId = paymentData.paymentId;
+      
+      // Start polling for payment
+      startPaymentPolling(paymentData.paymentId);
+    }
+
+    // Generate a unique payment ID
+    function generatePaymentId() {
+      return 'pay_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    // Start polling for payment confirmation
+    function startPaymentPolling(paymentId) {
+      // Show transaction status
+      showTransactionStatus('pending', 'Waiting for payment confirmation...');
+      
+      // Poll every 5 seconds
+      const pollInterval = setInterval(async () => {
+        try {
+          const response = await fetch(`${CONFIG.apiBaseUrl}/payments/verify/${paymentId}`);
+          const data = await response.json();
+          
+          if (data.status === 'verified') {
+            // Payment verified
+            clearInterval(pollInterval);
+            paymentVerified(data);
+          } else if (data.status === 'failed') {
+            // Payment failed
+            clearInterval(pollInterval);
+            showTransactionStatus('error', 'Payment failed. Please try again.');
+          }
+          // If status is 'pending', do nothing and continue polling
+          
+        } catch (error) {
+          console.error('Error polling payment status:', error);
+          // Don't stop polling on error, just log it
+        }
+      }, 5000);
+      
+      // Set a timeout to stop polling after 30 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (!state.paymentVerified) {
+          showTransactionStatus('error', 'Payment timed out. Please try again.');
+        }
+      }, 30 * 60 * 1000);
+    }
+
+    // Handle successful payment verification
+    function paymentVerified(paymentData) {
+      state.paymentVerified = true;
+      state.chatSessionId = paymentData.sessionId;
+      
+      // Update UI
+      showTransactionStatus('success', 'Payment confirmed! Starting chat session...');
+      
+      // Show chat interface after a short delay
+      setTimeout(() => {
+        document.querySelector('.payment-container').classList.add('hidden');
+        elements.chatInterface.classList.remove('hidden');
+        elements.userInput.focus();
+      }, 1500);
+    }
+
+    // Show transaction status
+    function showTransactionStatus(type, message) {
+      elements.transactionStatus.className = `transaction-status ${type}`;
+      elements.transactionStatus.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'spinner fa-spin'}"></i>
+        <span>${message}</span>
+      `;
+      elements.transactionStatus.classList.remove('hidden');
+    }
+
+    // Show error message
+    function showError(message) {
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'alert alert-danger';
+      errorDiv.innerHTML = `
+        <i class="fas fa-exclamation-triangle"></i> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      `;
+      
+      // Insert at the top of the container
+      const container = document.querySelector('.container');
+      container.insertBefore(errorDiv, container.firstChild);
+      
+      // Auto-dismiss after 10 seconds
+      setTimeout(() => {
+        errorDiv.remove();
+      }, 10000);
+    }
+
+    // Select payment method
+    function selectPaymentMethod(method) {
+      // Remove active class from all methods
+      elements.paymentMethods.forEach(m => m.classList.remove('active'));
+      
+      // Add active class to selected method
+      method.classList.add('active');
+      
+      // Handle method-specific UI changes
+      const methodType = method.dataset.method;
+      if (methodType === 'wallet') {
+        elements.connectWalletBtn.classList.remove('hidden');
+        elements.payWithQrBtn.classList.add('hidden');
+        elements.qrSection.classList.add('hidden');
+      } else if (methodType === 'qr') {
+        elements.connectWalletBtn.classList.add('hidden');
+        elements.payWithQrBtn.classList.remove('hidden');
+      }
+    }
+
+    // Copy text to clipboard
+    function copyToClipboard() {
+      const text = elements.paymentAddress.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const originalText = elements.copyAddressBtn.innerHTML;
+        elements.copyAddressBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+        setTimeout(() => {
+          elements.copyAddressBtn.innerHTML = originalText;
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy text: ', err);
+      });
+    }
+
+    // Shorten Ethereum address for display
+    function shortenAddress(address) {
+      if (!address) return '';
+      return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+    }
+
+    // Send message to AI
+    async function sendMessage() {
+      const message = elements.userInput.value.trim();
+      if (!message) return;
+      
+      // Add user message to chat
+      addMessage('user', message);
+      elements.userInput.value = '';
+      
+      // Show typing indicator
+      const typingIndicator = addMessage('ai', '...', true);
+      
+      try {
+        // Call the API to get AI response
+        const response = await fetch(`${CONFIG.apiBaseUrl}/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${state.chatSessionId}`
+          },
+          body: JSON.stringify({
+            message: message,
+            sessionId: state.chatSessionId
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to get response from AI');
+        }
+        
+        const data = await response.json();
+        
+        // Update typing indicator with actual response
+        updateMessage(typingIndicator, 'ai', data.response);
+        
+      } catch (error) {
+        console.error('Error sending message:', error);
+        updateMessage(typingIndicator, 'ai', 'Sorry, I encountered an error. Please try again.');
+      }
+    }
+
+    // Add a message to the chat
+    function addMessage(sender, text, isTyping = false) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${sender}-message`;
+      messageDiv.innerHTML = `
+        <div class="message-content">
+          <div class="message-sender">${sender === 'user' ? 'You' : 'AI'}</div>
+          <div class="message-text">${isTyping ? '<span class="typing-dots">...</span>' : text}</div>
+        </div>
+      `;
+      
+      elements.chatMessages.appendChild(messageDiv);
+      elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+      
+      return messageDiv;
+    }
+    
+    // Update an existing message
+    function updateMessage(messageDiv, sender, text) {
+      messageDiv.querySelector('.message-text').innerHTML = text;
+      messageDiv.scrollIntoView({ behavior: 'smooth' });
+    }
   </script>
-  <script src="js/compat.js"></script>
-  <script src="js/utils.js"></script>
-  <script src="js/session.js"></script>
-  <script src="js/page-mode.js"></script>
-  <script src="js/payment.js"></script>
-  <script src="js/chat.js"></script>
-  <script src="js/app.js"></script>
 </body>
 </html>
