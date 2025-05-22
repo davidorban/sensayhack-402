@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src *; frame-src *; base-uri 'self'; form-action 'self'; child-src *;" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sensay x402 - Test Mode</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="header">
+    <a href="index.html" class="back-button">← Back to Home</a>
+    <h1>Sensay x402 - Test Mode</h1>
+    <div class="mode-indicator test-mode">TEST MODE</div>
+  </div>
+
+  <div class="chat-container">
+    <div class="chat-messages" id="chat-messages">
+      <div class="message ai">
+        <div class="message-content">
+          Hello! I'm Sensay, your AI assistant. This is the TEST environment where you can experiment without making real payments. How can I help you today?
+        </div>
+      </div>
+    </div>
+    
+    <div class="chat-input-container">
+      <textarea id="chat-input" placeholder="Type your message here..." rows="3"></textarea>
+      <button id="send-button">Send</button>
+    </div>
+  </div>
+
+  <div class="payment-modal" id="payment-modal">
+    <div class="payment-modal-content">
+      <h2>Payment Required</h2>
+      <p>To continue this conversation, a small cryptocurrency payment is required.</p>
+      <p class="payment-amount">Amount: <span id="payment-amount">0.001 ETH</span></p>
+      <div class="payment-buttons">
+        <button id="pay-button">Make Payment</button>
+        <button id="cancel-payment-button">Cancel</button>
+      </div>
+      <p class="payment-note">Note: In test mode, no real payment will be processed.</p>
+    </div>
+  </div>
+
+  <div class="payment-iframe-container" id="payment-iframe-container">
+    <div class="payment-iframe-header">
+      <button id="close-iframe-button">Close</button>
+    </div>
+    <iframe id="payment-iframe" src="about:blank"></iframe>
+  </div>
+
+  <script src="js/page-mode.js"></script>
+  <script>
+    // Initialize the page mode
+    const pageMode = new PageMode('test');
+    pageMode.initialize();
+  </script>
+  <script src="js/chat.js"></script>
+  <script src="js/payment.js"></script>
+</body>
+</html>

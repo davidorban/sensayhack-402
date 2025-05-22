@@ -106,38 +106,115 @@ async function sendMessage(message, messageId, sessionId, isRetry = false) {
     
     // Check if we should use test replica
     // Ensure window.paymentMode is fully initialized before accessing useTestReplica
-    const useTestReplica = window.paymentMode && typeof window.paymentMode.useTestReplica === 'function' 
-      ? window.paymentMode.useTestReplica() 
-      : true;
+    let useTestReplica = true; // Default to test mode
+    
+    if (window.paymentMode && typeof window.paymentMode.useTestReplica === 'function') {
+      useTestReplica = window.paymentMode.useTestReplica();
+    } else if (window.paymentMode && typeof window.paymentMode.replicaTestMode !== 'undefined') {
+      // Fallback to directly accessing the property if method doesn't exist
+      useTestReplica = window.paymentMode.replicaTestMode;
+    }
+    
     console.log('Using test replica:', useTestReplica);
     
     // Make API call with appropriate endpoint based on replica mode
-    // When useTestReplica is true, we use the test endpoint
-    const apiUrl = useTestReplica ? '/api/chat/test' : '/api/chat';
+    // Determine the appropriate API endpoint based on environment and mode
+    let apiUrl;
+    const isLocalDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
+    if (isLocalDevelopment) {
+      // In local development, we can use mock endpoints for easier testing
+      if (useTestReplica) {
+        apiUrl = '/api/mock/chat'; // Use mock data for test mode
+      } else {
+        apiUrl = '/api/chat'; // Use real endpoint for live mode
+      }
+    } else {
+      // In production, always use the real API endpoints
+      apiUrl = '/api/chat';
+    }
+    
     console.log('Using API URL:', apiUrl);
     
     try {
-      response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Request-ID': messageId,
-          'X-Session-ID': sessionId || '',
-          'X-Test-Mode': useTestReplica ? 'true' : 'false'
-        },
-        body: JSON.stringify({
-          ...requestBody,
-          metadata: {
-            ...requestBody.metadata,
-            testMode: useTestReplica
-          }
-        })
-      });
+      // Check if we're running locally and should use a mock response
+      const isLocalDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       
-      responseData = await response.json();
+      if (isLocalDevelopment && useTestReplica) {
+        // Provide a direct mock response when in local development and test mode
+        console.log('Using local mock response for development');
+        
+        // Simulate a network delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Create a mock response
+        responseData = {
+          status: 'success',
+          reply: `This is a mock response in ${useTestReplica ? 'TEST' : 'LIVE'} mode. Your message was: "${message}"`,
+          messageId: messageId,
+          timestamp: new Date().toISOString()
+        };
+        
+        // Create a mock response object
+        response = {
+          status: 200,
+          ok: true
+        };
+      } else {
+        // Make the actual API request
+        response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Request-ID': messageId,
+            'X-Session-ID': sessionId || '',
+            'X-Test-Mode': useTestReplica ? 'true' : 'false'
+          },
+          body: JSON.stringify({
+            ...requestBody,
+            metadata: {
+              ...requestBody.metadata,
+              testMode: useTestReplica
+            }
+          })
+        });
+        
+        // Check if response is OK before parsing JSON
+        if (!response.ok) {
+          throw new Error(`Server responded with status: ${response.status}`);
+        }
+        
+        try {
+          responseData = await response.json();
+        } catch (jsonError) {
+          console.error('Error parsing JSON response:', jsonError);
+          throw new Error('Invalid response from server');
+        }
+      }
     } catch (e) {
       console.error('Error making API request:', e);
-      throw new Error('Failed to connect to the server');
+      
+      // Always provide a fallback response in local development
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log('Using fallback mock response after error');
+        
+        response = {
+          status: 200,
+          ok: true
+        };
+        
+        // Create a developer-friendly fallback response
+        responseData = {
+          status: 'success',
+          reply: `[Development Mode] Your message: "${message}" was received, but there was an API error. This is a fallback response.`,
+          messageId: messageId,
+          sessionId: 'local-dev-session',
+          timestamp: new Date().toISOString()
+        };
+      } else {
+        // In production, show a more user-friendly error
+        throw new Error('Unable to connect to the AI service. Please try again later.');
+      }
     }
     
     console.log('Server response:', { status: response.status, data: responseData });

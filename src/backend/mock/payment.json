@@ -1,0 +1,12 @@
+{
+  "status": "success",
+  "paymentId": "mock_payment_123",
+  "amount": "0.001",
+  "currency": "ETH",
+  "timestamp": "2025-05-22T09:32:00+02:00",
+  "metadata": {
+    "provider": "mock-coinbase",
+    "version": "1.0",
+    "processingTime": 0.3
+  }
+}

@@ -18,22 +18,32 @@
   width: auto;
 }
 
-.toggle-table th,
 .toggle-table td {
   padding: 4px 8px;
   text-align: left;
   border: none;
   height: 36px;
+  vertical-align: middle;
 }
 
-.toggle-table th {
-  font-weight: 600;
-  color: #5f6368;
-  padding-bottom: 8px;
-  text-align: center;
+/* Mode Labels */
+.mode-label {
   font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: 500;
+  text-align: center;
+  color: #5f6368;
+  padding: 0 8px;
+  width: 40px;
+}
+
+.test-label {
+  text-align: right;
+  color: #1a73e8;
+}
+
+.live-label {
+  text-align: left;
+  color: #ea4335;
 }
 
 /* Row Headers */
@@ -89,8 +99,9 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
+/* When toggle is checked (right position), it's Live mode with blue color */
 input:checked + .slider {
-  background-color: #1a73e8;
+  background-color: #1a73e8; /* Blue for Live mode */
 }
 
 input:focus + .slider {

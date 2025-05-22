@@ -1,0 +1,63 @@
+/* Hide any indicator elements */
+.mode-indicator,
+[id*="mode-indicator"],
+[class*="mode-indicator"],
+[id*="indicator"],
+[class*="indicator"],
+div:not(.toggle-container):not(.toggle-table) span:not(.slider):not(.tooltiptext),
+div > span.mode-label,
+div > span.mode-test,
+div > span.mode-live,
+div:empty,
+div:not(.toggle-container):not(.switch-cell):not(.tooltip-cell):not(.row-header):not(.test-label):not(.live-label) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Specifically target the mode indicator div */
+#mode-indicator,
+.mode-indicator,
+div#mode-indicator.mode-indicator {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  position: absolute !important;
+  z-index: -9999 !important;
+  pointer-events: none !important;
+}
+
+/* Target the specific indicator elements at the bottom of the page */
+body > div:last-of-type:not(.layout-container):not(.controls-column):not(.chat-column):not(.toggle-container) {
+  display: none !important;
+}
+
+/* Hide any direct text nodes in the body */
+body > *:not(div):not(h1):not(script) {
+  display: none !important;
+}
+
+/* Target any elements containing the indicator text */
+*:not(.test-label):not(.live-label) {
+  position: relative;
+}
+
+*:not(.test-label):not(.live-label):not(.toggle-table *):not(script):not(style):not(head):not(meta):not(title):not(link):not(body):not(.layout-container):not(.chat-column):not(.controls-column):not(#chat-container):not(#response):not(#input-area):not(#message-input):not(#send-button):not(.toggle-container):not(h1):not(table):not(tbody):not(tr):not(td) {
+  position: relative;
+}
+
+*:not(.test-label):not(.live-label):not(.toggle-table *):not(script):not(style):not(head):not(meta):not(title):not(link):not(body):not(.layout-container):not(.chat-column):not(.controls-column):not(#chat-container):not(#response):not(#input-area):not(#message-input):not(#send-button):not(.toggle-container):not(h1):not(table):not(tbody):not(tr):not(td):empty {
+  display: none !important;
+}
+
+/* Remove font weight changes in the test/live labels */
+.test-label, .live-label {
+  font-weight: 500 !important;
+}

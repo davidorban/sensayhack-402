@@ -4,83 +4,146 @@
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src *; frame-src *; base-uri 'self'; form-action 'self'; child-src *;" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sensay x402 Chat</title>
+  <title>Sensay x402 - Home</title>
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/toggle.css">
+  <style>
+    .home-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    
+    .card {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      background-color: #f8f9fa;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    .card h2 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+    
+    .card-description {
+      margin-bottom: 1.5rem;
+    }
+    
+    .button-container {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    
+    .button {
+      display: inline-block;
+      padding: 0.8rem 1.5rem;
+      border-radius: 30px;
+      font-weight: 600;
+      text-decoration: none;
+      text-align: center;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    
+    .button:hover {
+      transform: scale(1.05);
+    }
+    
+    .button-test {
+      background-color: #f0f0f0;
+      color: #333;
+      border: 2px solid #ddd;
+    }
+    
+    .button-test:hover {
+      background-color: #e0e0e0;
+    }
+    
+    .button-live {
+      background-color: #4a90e2;
+      color: white;
+      border: 2px solid #3a80d2;
+    }
+    
+    .button-live:hover {
+      background-color: #3a80d2;
+    }
+    
+    .feature-list {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    
+    .feature-list li {
+      margin-bottom: 0.8rem;
+      padding-left: 1.5rem;
+      position: relative;
+    }
+    
+    .feature-list li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #4a90e2;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-  <h1>Pay-to-Chat with Sensay</h1>
+  <h1>Sensay x402 Chat</h1>
   
-  <div class="layout-container">
-    <!-- Left side: Chat container -->
-    <div class="chat-column">
-      <div id="chat-container">
-        <div id="response">Send a message to start chatting...</div>
-        <div id="input-area">
-          <textarea id="message-input" placeholder="Type your message..."></textarea>
-          <button id="send-button">Send</button>
-        </div>
+  <div class="home-container">
+    <div class="card">
+      <h2>Welcome to Sensay x402</h2>
+      <div class="card-description">
+        <p>Sensay x402 is a pay-to-chat application that allows you to interact with an AI assistant using Coinbase's x402 protocol for payments. This demo showcases how to integrate cryptocurrency payments with AI chat services.</p>
+        
+        <h3>The Problem</h3>
+        <p>Integrating payment systems with AI services often requires complex toggle mechanisms to switch between test and live environments. This can lead to confusion when the visual state of toggles doesn't match the actual functionality.</p>
+        
+        <h3>Our Solution</h3>
+        <p>We've simplified the experience by creating separate environments for testing and live usage, eliminating the need for confusing toggle switches. This ensures that the user interface clearly communicates the current mode of operation.</p>
+        
+        <h3>Key Features</h3>
+        <ul class="feature-list">
+          <li>Clear separation between test and live environments</li>
+          <li>Seamless integration with Coinbase x402 payment protocol</li>
+          <li>Mock responses in test mode for easy development</li>
+          <li>Live AI responses in production mode</li>
+          <li>Secure payment processing</li>
+        </ul>
       </div>
     </div>
     
-    <!-- Right side: Controls and Payment -->
-    <div class="controls-column">
-      <!-- Mode Toggles -->
-      <div class="toggle-container">
-        <table class="toggle-table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Test</th>
-              <th>Live</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="row-header">Replica</td>
-              <td colspan="2" class="switch-cell">
-                <label class="switch">
-                  <input type="checkbox" id="replica-mode-toggle" checked>
-                  <span class="slider"></span>
-                </label>
-              </td>
-              <td class="tooltip-cell">
-                <div class="tooltip">
-                  ℹ️
-                  <span class="tooltiptext">Toggle between test (mock responses) and live replica</span>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="row-header">Payment</td>
-              <td colspan="2" class="switch-cell">
-                <label class="switch">
-                  <input type="checkbox" id="payment-mode-toggle" checked>
-                  <span class="slider"></span>
-                </label>
-              </td>
-              <td class="tooltip-cell">
-                <div class="tooltip">
-                  ℹ️
-                  <span class="tooltiptext">Toggle between test (mock payments) and live payments</span>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      
-      <!-- Payment Instructions (now below the toggle) -->
-      <div id="payment-instructions"></div>
+    <div class="button-container">
+      <a href="test.html" class="button button-test">Try Test Environment</a>
+      <a href="live.html" class="button button-live">Use Live Environment</a>
     </div>
   </div>
-
-  <script src="js/utils.js"></script>
-  <script src="js/session.js"></script>
-  <script src="js/payment-mode.js"></script>
-  <script src="js/payment.js"></script>
-  <script src="js/chat.js"></script>
-  <script src="js/app.js"></script>
+  
+  <script>
+    // Store the user's choice in localStorage
+    document.querySelector('.button-test').addEventListener('click', function(e) {
+      localStorage.setItem('paymentTestMode', 'true');
+      localStorage.setItem('replicaTestMode', 'true');
+    });
+    
+    document.querySelector('.button-live').addEventListener('click', function(e) {
+      localStorage.setItem('paymentTestMode', 'false');
+      localStorage.setItem('replicaTestMode', 'false');
+    });
+  </script>
 </body>
 </html>

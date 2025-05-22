@@ -52,7 +52,9 @@ class PaymentMode {
       if (savedPaymentMode !== null) {
         this.paymentTestMode = savedPaymentMode === 'true';
         if (this.paymentToggle) {
-          this.paymentToggle.checked = this.paymentTestMode;
+          // When in Test mode, toggle should be on the left (unchecked)
+          // When in Live mode, toggle should be on the right (checked)
+          this.paymentToggle.checked = !this.paymentTestMode;
         }
       }
       
@@ -61,7 +63,9 @@ class PaymentMode {
       if (savedReplicaMode !== null) {
         this.replicaTestMode = savedReplicaMode === 'true';
         if (this.replicaToggle) {
-          this.replicaToggle.checked = this.replicaTestMode;
+          // When in Test mode, toggle should be on the left (unchecked)
+          // When in Live mode, toggle should be on the right (checked)
+          this.replicaToggle.checked = !this.replicaTestMode;
         }
       }
     } catch (e) {
@@ -87,11 +91,25 @@ class PaymentMode {
    */
   handleModeChange(type) {
     if (type === 'payment' && this.paymentToggle) {
-      this.paymentTestMode = this.paymentToggle.checked;
-      console.log(`Payment mode changed to: ${this.paymentTestMode ? 'Test' : 'Live'}`);
+      // Get the current toggle position
+      const isLiveMode = this.paymentToggle.checked;
+      
+      // Update internal state
+      // When toggle is on the right (checked/blue), it's Live mode
+      // When toggle is on the left (unchecked/gray), it's Test mode
+      this.paymentTestMode = !isLiveMode;
+      
+      console.log(`Payment mode changed to: ${isLiveMode ? 'Live' : 'Test'} (Toggle checked: ${isLiveMode})`);
     } else if (type === 'replica' && this.replicaToggle) {
-      this.replicaTestMode = this.replicaToggle.checked;
-      console.log(`Replica mode changed to: ${this.replicaTestMode ? 'Test' : 'Live'}`);
+      // Get the current toggle position
+      const isLiveMode = this.replicaToggle.checked;
+      
+      // Update internal state
+      // When toggle is on the right (checked/blue), it's Live mode
+      // When toggle is on the left (unchecked/gray), it's Test mode
+      this.replicaTestMode = !isLiveMode;
+      
+      console.log(`Replica mode changed to: ${isLiveMode ? 'Live' : 'Test'} (Toggle checked: ${isLiveMode})`);
     }
     
     this.saveSettings();
@@ -113,15 +131,20 @@ class PaymentMode {
   updateUI() {
     // Update toggle states based on current modes
     if (this.paymentToggle) {
-      this.paymentToggle.checked = this.paymentTestMode;
+      // When in Test mode, toggle should be on the left (unchecked)
+      // When in Live mode, toggle should be on the right (checked)
+      this.paymentToggle.checked = !this.paymentTestMode;
+      
+      // No need to update label visibility for payment toggle anymore
     }
     
     if (this.replicaToggle) {
-      this.replicaToggle.checked = this.replicaTestMode;
+      // When in Test mode, toggle should be on the left (unchecked)
+      // When in Live mode, toggle should be on the right (checked)
+      this.replicaToggle.checked = !this.replicaTestMode;
+      
+      // No need to update label visibility for replica toggle anymore
     }
-    
-    // Add visual indicators to the page
-    this.updateModeIndicators();
     
     // Log current states
     console.log(`Payment mode: ${this.paymentTestMode ? 'TEST' : 'LIVE'}, ` +
@@ -135,10 +158,13 @@ class PaymentMode {
    * Get the current payment configuration
    */
   getPaymentConfig() {
+    // Get the actual toggle position - right/checked (blue) = LIVE, left/unchecked (gray) = TEST
+    const isTestMode = !this.paymentToggle?.checked;
+    
     return {
-      isTestMode: this.paymentTestMode,
-      baseUrl: this.paymentTestMode ? '/payment/test' : '/payment',
-      type: this.paymentTestMode ? 'test' : 'production'
+      isTestMode: isTestMode,
+      baseUrl: isTestMode ? '/payment/test' : '/payment',
+      type: isTestMode ? 'test' : 'production'
     };
   }
   
@@ -146,10 +172,11 @@ class PaymentMode {
    * Check if we should use the test replica
    */
   useTestReplica() {
-    // In the UI, checked = Test mode, unchecked = Live mode
+    // Get the actual toggle position - right/checked (blue) = LIVE, left/unchecked (gray) = TEST
     // This method should return true for Test mode, false for Live mode
-    console.log('useTestReplica called, returning:', this.replicaTestMode);
-    return this.replicaTestMode;
+    const useTestMode = !this.replicaToggle?.checked;
+    console.log('useTestReplica called, returning:', useTestMode);
+    return useTestMode;
   }
   
   /**
@@ -157,7 +184,8 @@ class PaymentMode {
    * @returns {string} 'test' or 'live'
    */
   getMode() {
-    return this.paymentTestMode ? 'test' : 'live';
+    // Get the actual toggle position - right/checked (blue) = LIVE, left/unchecked (gray) = TEST
+    return this.paymentToggle?.checked ? 'live' : 'test';
   }
   
   /**
@@ -165,14 +193,16 @@ class PaymentMode {
    * @returns {boolean}
    */
   isTest() {
-    return this.paymentTestMode;
+    // Get the actual toggle position - right/checked (blue) = LIVE, left/unchecked (gray) = TEST
+    return !this.paymentToggle?.checked;
   }
   
   /**
    * Check if mock responses should be used
    */
   shouldUseMockResponses() {
-    return this.replicaTestMode;
+    // Get the actual toggle position - right/checked (blue) = LIVE, left/unchecked (gray) = TEST
+    return !this.replicaToggle?.checked;
   }
   
   /**
@@ -192,68 +222,7 @@ class PaymentMode {
     });
   }
   
-  /**
-   * Update visual indicators on the page to show current mode
-   */
-  updateModeIndicators() {
-    // Create or update mode indicator element
-    let modeIndicator = document.getElementById('mode-indicator');
-    
-    if (!modeIndicator) {
-      // Create the indicator if it doesn't exist
-      modeIndicator = document.createElement('div');
-      modeIndicator.id = 'mode-indicator';
-      modeIndicator.className = 'mode-indicator';
-      
-      // Add it to the page after the toggle container
-      const toggleContainer = document.querySelector('.toggle-container');
-      if (toggleContainer?.parentNode) {
-        toggleContainer.parentNode.insertBefore(modeIndicator, toggleContainer.nextSibling);
-      } else {
-        // Fallback to adding it to the body
-        document.body.appendChild(modeIndicator);
-      }
-      
-      // Add some basic styles if they don't exist
-      if (!document.getElementById('mode-indicator-style')) {
-        const style = document.createElement('style');
-        style.id = 'mode-indicator-style';
-        style.textContent = `
-          .mode-indicator {
-            text-align: center;
-            margin: 5px 0;
-            font-size: 12px;
-            color: #666;
-          }
-          .mode-label {
-            display: inline-block;
-            margin: 0 10px;
-            padding: 2px 8px;
-            border-radius: 10px;
-          }
-          .mode-test {
-            background-color: #e6f7ff;
-            color: #0066cc;
-          }
-          .mode-live {
-            background-color: #f6ffed;
-            color: #52c41a;
-          }
-        `;
-        document.head.appendChild(style);
-      }
-    }
-    
-    // Update the indicator content
-    modeIndicator.innerHTML = `
-      <span class="mode-label ${this.replicaTestMode ? 'mode-test' : 'mode-live'}">
-        Replica: ${this.replicaTestMode ? 'TEST' : 'LIVE'}
-      </span>
-      <span class="mode-label ${this.paymentTestMode ? 'mode-test' : 'mode-live'}">
-        Payment: ${this.paymentTestMode ? 'TEST' : 'LIVE'}
-      </span>
-    `;
-  }
+  // updateModeIndicators method has been removed
 }
 
 // Initialize payment mode toggle when DOM is loaded

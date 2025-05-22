@@ -1,0 +1,12 @@
+{
+  "status": "success",
+  "reply": "This is a mock response from the Sensay x402 API. Your message has been received and processed successfully.",
+  "messageId": "mock_msg_123",
+  "sessionId": "mock_session_456",
+  "timestamp": "2025-05-22T09:30:00+02:00",
+  "metadata": {
+    "model": "sensay-x402",
+    "version": "1.0",
+    "processingTime": 0.5
+  }
+}

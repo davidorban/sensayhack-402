@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src *; frame-src *; base-uri 'self'; form-action 'self'; child-src *;" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sensay x402 Chat - Live Environment</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .environment-badge {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background-color: #4a90e2;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      z-index: 1000;
+      border: 2px solid #3a80d2;
+    }
+    
+    .back-button {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background-color: #f0f0f0;
+      color: #333;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      z-index: 1000;
+      border: 2px solid #ddd;
+      text-decoration: none;
+      transition: background-color 0.3s ease;
+    }
+    
+    .back-button:hover {
+      background-color: #e0e0e0;
+    }
+    
+    .mode-info {
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-left: 4px solid #4a90e2;
+    }
+    
+    .mode-info h3 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+    
+    .mode-info p {
+      margin-bottom: 0;
+      color: #495057;
+    }
+    
+    .warning {
+      color: #dc3545;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="environment-badge">LIVE ENVIRONMENT</div>
+  <a href="index.html" class="back-button">← Back to Home</a>
+  
+  <h1>Pay-to-Chat with Sensay</h1>
+  
+  <div class="layout-container">
+    <!-- Left side: Chat container -->
+    <div class="chat-column">
+      <div class="mode-info">
+        <h3>Live Environment</h3>
+        <p>You are using the live environment with real AI responses and actual payments. <span class="warning">Real transactions will occur.</span></p>
+      </div>
+      
+      <div id="chat-container">
+        <div id="response">Send a message to start chatting with the live AI...</div>
+        <div id="input-area">
+          <textarea id="message-input" placeholder="Type your message..."></textarea>
+          <button id="send-button">Send</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Right side: Controls and Payment -->
+    <div class="controls-column">
+      <!-- Payment Instructions -->
+      <div id="payment-instructions"></div>
+    </div>
+  </div>
+
+  <script>
+    // Force live mode settings
+    localStorage.setItem('paymentTestMode', 'false');
+    localStorage.setItem('replicaTestMode', 'false');
+  </script>
+  <script src="js/utils.js"></script>
+  <script src="js/session.js"></script>
+  <script src="js/page-mode.js"></script>
+  <script src="js/payment.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
