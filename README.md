@@ -2,7 +2,15 @@
 
 A proof-of-concept implementation of the [Coinbase x402 protocol](https://docs.cdp.coinbase.com/x402/overview) for paywalling AI chat interactions using Sensay's API.
 
-## 🚀 Overview
+🌐 **Live Demo**: [https://sensayhack-402.onrender.com](https://sensayhack-402.onrender.com)
+
+## 🚀 Quick Start
+
+1. Visit the [live demo](https://sensayhack-402.onrender.com)
+2. Try sending a few messages in the test environment
+3. Experience the payment flow when the free message limit is reached
+
+## 📋 Overview
 
 This project demonstrates how to integrate the Coinbase x402 protocol with the Sensay API to require cryptocurrency payment before an AI Replica responds to user messages. The first two messages are free, and payment is required starting from the third message. This serves as a reference implementation for developers looking to monetize AI chat interfaces.
 
