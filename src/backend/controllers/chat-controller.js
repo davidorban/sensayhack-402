@@ -72,10 +72,13 @@ export const ChatController = {
         
         // Set X402 protocol headers if available
         if (paymentRequest.x402) {
-          Object.entries(paymentRequest.x402).forEach(([key, value]) => {
+          for (const [key, value] of Object.entries(paymentRequest.x402)) {
             res.set(key, value);
-          });
+          }
         }
+        
+        // Ensure we always have a payment URL
+        const fallbackPaymentUrl = `/payment.html?paymentId=${paymentRequest.paymentId}&userId=${encodeURIComponent(userId)}`;
         
         return res.status(402).json({
           status: 'payment_required',
@@ -86,10 +89,11 @@ export const ChatController = {
           asset: paymentRequest.asset || 'usdc',
           chain: paymentRequest.chain || 'base',
           walletAddress: paymentRequest.walletAddress,
-          paymentUrl: paymentRequest.paymentUrl,
+          // Ensure paymentUrl is always set, falling back to paymentHtml if needed
+          paymentUrl: paymentRequest.paymentUrl || fallbackPaymentUrl,
           qrCode: paymentRequest.qrCode,
           verifyUrl: verificationUrl.toString(),
-          paymentHtml: `/payment.html?paymentId=${paymentRequest.paymentId}&userId=${encodeURIComponent(userId)}`,
+          paymentHtml: fallbackPaymentUrl,
           message: 'Please complete the payment to continue chatting.',
           instructions: paymentRequest.instructions || 'Complete the payment to continue',
           timestamp: new Date().toISOString(),

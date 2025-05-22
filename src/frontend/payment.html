@@ -303,7 +303,18 @@
       // Fetch payment details from server
       async function fetchPaymentDetails() {
         try {
-          const response = await fetch(`/payment/details/${paymentId}?userId=${encodeURIComponent(userId || '')}`);
+          // Get test mode parameter from URL
+          const isTestMode = urlParams.get('test') === 'true';
+          
+          // Log payment request details for debugging
+          console.log('Fetching payment details:', {
+            paymentId,
+            userId,
+            isTestMode
+          });
+          
+          // Include test mode parameter in the request
+          const response = await fetch(`/payment/details/${paymentId}?userId=${encodeURIComponent(userId || '')}&test=${isTestMode}`);
           
           if (!response.ok) {
             throw new Error(`Failed to fetch payment details: ${response.status}`);

@@ -12,9 +12,36 @@ export class PaymentService {
    * Get payment details including wallet address and QR code
    * @param {string} paymentId - Payment ID
    * @param {string} userId - User ID
+   * @param {boolean} isTestMode - Whether to use test mode
    * @returns {Object} - Payment details
    */
-  static getPaymentDetails(paymentId, userId) {
+  static getPaymentDetails(paymentId, userId, isTestMode = false) {
+    logger.info('Getting payment details:', { paymentId, userId, isTestMode });
+    
+    // If test mode is enabled, create a mock payment if it doesn't exist
+    if (isTestMode && !sessionStore.isPaymentPending(paymentId) && !sessionStore.hasReceipt(paymentId)) {
+      // Create a mock payment for testing
+      const mockPayment = {
+        paymentId,
+        userId,
+        amount: 0.01,
+        currency: 'USD',
+        status: 'pending',
+        timestamp: new Date().toISOString(),
+        isMock: true,
+        reason: 'Test payment',
+        paymentType: 'mock',
+        walletAddress: '0xMockWalletAddress',
+        chain: 'base',
+        asset: 'USD',
+        qrCode: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+      };
+      
+      // Store the mock payment
+      sessionStore.addPendingPayment(paymentId, mockPayment);
+      logger.info('Created mock payment for test mode:', { paymentId });
+    }
+    
     // Check if payment is in pending payments
     if (sessionStore.isPaymentPending(paymentId)) {
       return sessionStore.getPendingPayment(paymentId);
@@ -231,7 +258,63 @@ export class PaymentService {
    * @param {string} userId - User ID
    * @returns {Object} - Payment status
    */
-  static checkPaymentStatus(paymentId, userId) {
+  static checkPaymentStatus(paymentId, userId, isTestMode = false) {
+    logger.info('Checking payment status:', { paymentId, userId, isTestMode });
+    
+    // If test mode is enabled and we want to auto-approve the payment
+    if (isTestMode && config.mockPayment.enabled) {
+      // Check if we should auto-approve this test payment
+      // In a real app, you might want to add some conditions here
+      // For demo purposes, we'll auto-approve if it's not already verified
+      if (!sessionStore.hasReceipt(paymentId)) {
+        logger.info('Auto-approving test payment:', { paymentId });
+        
+        // Get the pending payment details or create mock details if needed
+        let paymentDetails = sessionStore.getPendingPayment(paymentId);
+        if (!paymentDetails) {
+          paymentDetails = {
+            paymentId,
+            userId,
+            amount: 0.01,
+            currency: 'USD',
+            status: 'pending',
+            timestamp: new Date().toISOString(),
+            isMock: true,
+            reason: 'Test payment',
+            paymentType: 'mock'
+          };
+          sessionStore.addPendingPayment(paymentId, paymentDetails);
+        }
+        
+        // Create a receipt for the payment
+        const receipt = {
+          paymentId,
+          userId,
+          amount: paymentDetails.amount || 0.01,
+          currency: paymentDetails.currency || 'USD',
+          timestamp: new Date().toISOString(),
+          status: 'completed',
+          proof: `mock-proof-${Date.now()}`,
+          isMock: true
+        };
+        
+        // Add the receipt to the session store
+        sessionStore.addReceipt(paymentId, receipt);
+        
+        // Return success response
+        return {
+          paymentId,
+          paid: true,
+          timestamp: new Date().toISOString(),
+          userId: receipt.userId || userId,
+          amount: receipt.amount,
+          currency: receipt.currency,
+          status: 'completed',
+          message: 'Test payment auto-approved'
+        };
+      }
+    }
+    
     // Check if payment is verified
     if (sessionStore.hasReceipt(paymentId)) {
       const receipt = sessionStore.getReceipt(paymentId);
@@ -239,7 +322,8 @@ export class PaymentService {
         paymentId,
         paid: true,
         timestamp: new Date().toISOString(),
-        userId: receipt.userId || userId
+        userId: receipt.userId || userId,
+        status: 'completed'
       };
     }
     

@@ -112,7 +112,9 @@ async function sendMessage(message, messageId, sessionId, isRetry = false) {
     console.log('Using test replica:', useTestReplica);
     
     // Make API call with appropriate endpoint based on replica mode
+    // When useTestReplica is true, we use the test endpoint
     const apiUrl = useTestReplica ? '/api/chat/test' : '/api/chat';
+    console.log('Using API URL:', apiUrl);
     
     try {
       response = await fetch(apiUrl, {
@@ -190,7 +192,13 @@ async function sendMessage(message, messageId, sessionId, isRetry = false) {
       
       // Show payment UI with the payment URL from the server
       // Check if we have a payment URL or HTML page link
-      const paymentUrlStr = responseData.paymentUrl || responseData.paymentHtml;
+      let paymentUrlStr = responseData.paymentUrl || responseData.paymentHtml;
+      
+      // If no payment URL is provided, construct a fallback URL
+      if (!paymentUrlStr && responseData.paymentId) {
+        paymentUrlStr = `/payment.html?paymentId=${responseData.paymentId}&userId=${encodeURIComponent(sessionId)}`;
+        console.log('Using fallback payment URL:', paymentUrlStr);
+      }
       
       if (paymentUrlStr) {
         // Get payment config based on current mode
@@ -203,6 +211,15 @@ async function sendMessage(message, messageId, sessionId, isRetry = false) {
         // Ensure we have all required payment details
         const paymentAmount = responseData.amount || '0.01'; // Default to 0.01 if amount is not provided
         const paymentCurrency = responseData.currency || responseData.asset || 'USD'; // Get currency
+        
+        // Log payment details to help with debugging
+        console.log('Payment details:', {
+          paymentId,
+          amount: paymentAmount,
+          currency: paymentCurrency,
+          messageId,
+          sessionId
+        });
         
         // Add test mode parameter to payment URL if in test mode
         const paymentUrl = new URL(paymentUrlStr, window.location.origin);
@@ -223,21 +240,28 @@ async function sendMessage(message, messageId, sessionId, isRetry = false) {
         }
         
         // Show payment information
-        paymentBox.innerHTML = `
+        const isTestMode = window.paymentMode?.isTest?.() || true;
+        const paymentInfoHtml = `
           <div class="payment-info">
             <p>🔒 This message requires a small payment to process.</p>
-            <p>Click the button below to complete the payment (test mode).</p>
-            <p>Amount: <strong>${paymentAmount} ${paymentCurrency}</strong></p>
-            <p>Message ID: <code>${messageId}</code></p>
-            <p>Payment ID: <code>${paymentId}</code></p>
+            <p>Click the button below to complete the payment ${isTestMode ? '(test mode)' : ''}.</p>
+            <p>Amount: <strong>${paymentAmount || '0.01'} ${paymentCurrency || 'USD'}</strong></p>
+            <p>Message ID: <code>${messageId || 'N/A'}</code></p>
+            <p>Payment ID: <code>${paymentId || 'N/A'}</code></p>
             <p>Session: <code>${sessionId ? `${sessionId.substring(0, 8)}...` : 'unknown'}</code></p>
             <div class="payment-actions">
               <button id="open-payment-btn" class="btn btn-primary">Open Payment Window</button>
               <button id="check-payment-btn" class="btn btn-secondary">Check Payment Status</button>
             </div>
-            <p class="payment-note">Note: This is a test payment. No real money will be charged.</p>
+            ${isTestMode ? '<p class="payment-note">Note: This is a test payment. No real money will be charged.</p>' : ''}
           </div>
         `;
+        
+        // Set the payment box content
+        paymentBox.innerHTML = paymentInfoHtml;
+        
+        // Make sure the payment box is visible
+        paymentBox.style.display = 'block';
         
         // Add event listeners for the buttons
         document.getElementById('open-payment-btn')?.addEventListener('click', () => {
@@ -250,6 +274,9 @@ async function sendMessage(message, messageId, sessionId, isRetry = false) {
             const paymentURL = new URL(paymentUrlToUse, window.location.origin).toString();
             console.log('Opening payment window with URL:', paymentURL, 'Payment ID:', paymentId);
             openPaymentWindow(paymentURL, paymentId);
+            
+            // Don't hide the payment box - it will be hidden when payment is verified
+            // This ensures the payment notice remains visible until the user completes the payment
           } catch (error) {
             console.error('Error opening payment window:', error);
             showError(`Failed to open payment window: ${error.message}`);
@@ -261,16 +288,61 @@ async function sendMessage(message, messageId, sessionId, isRetry = false) {
             if (!paymentId) {
               throw new Error('No payment ID available');
             }
-            checkPaymentStatus(paymentId, sessionId);
+            // Show checking status message
+            showInfo('Checking payment status...');
+            checkPaymentStatus(paymentId, sessionId)
+              .then(isPaid => {
+                if (isPaid) {
+                  // If payment is verified, hide the payment box
+                  paymentBox.style.display = 'none';
+                }
+              })
+              .catch(error => {
+                console.error('Error checking payment status:', error);
+                showError(`Failed to check payment status: ${error.message}`);
+              });
           } catch (error) {
             console.error('Error checking payment status:', error);
             showError(`Failed to check payment status: ${error.message}`);
           }
         });
-        
-        paymentBox.style.display = 'block';
       } else {
-        throw new Error('No payment URL provided by server');
+        // Create a fallback payment UI if no payment URL is provided
+        console.warn('No payment URL provided by server, creating fallback payment UI');
+        
+        // Generate a fallback payment ID if needed
+        const fallbackPaymentId = responseData.paymentId || `pay_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+        
+        // Get payment details from response data or use defaults
+        const fallbackAmount = responseData.amount || '0.01';
+        const fallbackCurrency = responseData.currency || responseData.asset || 'USD';
+        
+        // Show a basic payment UI
+        paymentBox.innerHTML = `
+          <div class="payment-info">
+            <p>🔒 This message requires a payment to process.</p>
+            <p>The server did not provide a payment URL. Please try again or contact support.</p>
+            <p>Amount: <strong>${fallbackAmount} ${fallbackCurrency}</strong></p>
+            <p>Payment ID: <code>${fallbackPaymentId || 'N/A'}</code></p>
+            <p>Message ID: <code>${messageId || 'N/A'}</code></p>
+            <div class="payment-actions">
+              <button id="retry-payment-btn" class="btn btn-primary">Retry</button>
+            </div>
+          </div>
+        `;
+        
+        // Make sure the payment box is visible
+        paymentBox.style.display = 'block';
+        
+        // Add event listener for retry button
+        document.getElementById('retry-payment-btn')?.addEventListener('click', () => {
+          try {
+            sendMessage(message, messageId, sessionId, true);
+          } catch (error) {
+            console.error('Error retrying message:', error);
+            showError(`Failed to retry: ${error.message}`);
+          }
+        });
       }
       
     } else {

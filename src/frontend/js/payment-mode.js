@@ -120,6 +120,9 @@ class PaymentMode {
       this.replicaToggle.checked = this.replicaTestMode;
     }
     
+    // Add visual indicators to the page
+    this.updateModeIndicators();
+    
     // Log current states
     console.log(`Payment mode: ${this.paymentTestMode ? 'TEST' : 'LIVE'}, ` +
                 `Replica mode: ${this.replicaTestMode ? 'TEST' : 'LIVE'}`);
@@ -134,7 +137,7 @@ class PaymentMode {
   getPaymentConfig() {
     return {
       isTestMode: this.paymentTestMode,
-      baseUrl: this.paymentTestMode ? '/payment' : '/payment',
+      baseUrl: this.paymentTestMode ? '/payment/test' : '/payment',
       type: this.paymentTestMode ? 'test' : 'production'
     };
   }
@@ -143,6 +146,8 @@ class PaymentMode {
    * Check if we should use the test replica
    */
   useTestReplica() {
+    // In the UI, checked = Test mode, unchecked = Live mode
+    // This method should return true for Test mode, false for Live mode
     console.log('useTestReplica called, returning:', this.replicaTestMode);
     return this.replicaTestMode;
   }
@@ -186,6 +191,69 @@ class PaymentMode {
       replicaTestMode: this.replicaTestMode
     });
   }
+  
+  /**
+   * Update visual indicators on the page to show current mode
+   */
+  updateModeIndicators() {
+    // Create or update mode indicator element
+    let modeIndicator = document.getElementById('mode-indicator');
+    
+    if (!modeIndicator) {
+      // Create the indicator if it doesn't exist
+      modeIndicator = document.createElement('div');
+      modeIndicator.id = 'mode-indicator';
+      modeIndicator.className = 'mode-indicator';
+      
+      // Add it to the page after the toggle container
+      const toggleContainer = document.querySelector('.toggle-container');
+      if (toggleContainer?.parentNode) {
+        toggleContainer.parentNode.insertBefore(modeIndicator, toggleContainer.nextSibling);
+      } else {
+        // Fallback to adding it to the body
+        document.body.appendChild(modeIndicator);
+      }
+      
+      // Add some basic styles if they don't exist
+      if (!document.getElementById('mode-indicator-style')) {
+        const style = document.createElement('style');
+        style.id = 'mode-indicator-style';
+        style.textContent = `
+          .mode-indicator {
+            text-align: center;
+            margin: 5px 0;
+            font-size: 12px;
+            color: #666;
+          }
+          .mode-label {
+            display: inline-block;
+            margin: 0 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+          }
+          .mode-test {
+            background-color: #e6f7ff;
+            color: #0066cc;
+          }
+          .mode-live {
+            background-color: #f6ffed;
+            color: #52c41a;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
+    
+    // Update the indicator content
+    modeIndicator.innerHTML = `
+      <span class="mode-label ${this.replicaTestMode ? 'mode-test' : 'mode-live'}">
+        Replica: ${this.replicaTestMode ? 'TEST' : 'LIVE'}
+      </span>
+      <span class="mode-label ${this.paymentTestMode ? 'mode-test' : 'mode-live'}">
+        Payment: ${this.paymentTestMode ? 'TEST' : 'LIVE'}
+      </span>
+    `;
+  }
 }
 
 // Initialize payment mode toggle when DOM is loaded
@@ -194,3 +262,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // No export for browser usage
+// This file is for browser usage only

@@ -12,9 +12,13 @@ export const PaymentController = {
     try {
       const { paymentId } = req.params;
       const userId = req.query.userId || req.session.userId;
+      const isTestMode = req.query.test === 'true';
+      
+      // Log request details for debugging
+      logger.info('Payment details request:', { paymentId, userId, isTestMode });
       
       // Get payment details from session store
-      const paymentDetails = PaymentService.getPaymentDetails(paymentId, userId);
+      const paymentDetails = PaymentService.getPaymentDetails(paymentId, userId, isTestMode);
       
       if (!paymentDetails || paymentDetails.status === 'error') {
         return res.status(404).json({
@@ -129,9 +133,13 @@ export const PaymentController = {
   checkPaymentStatus(req, res) {
     const { paymentId } = req.params;
     const userId = req.query.userId || req.session.userId;
+    const isTestMode = req.query.test === 'true';
+    
+    // Log request details for debugging
+    logger.info('Payment status check:', { paymentId, userId, isTestMode });
     
     // Check payment status
-    const status = PaymentService.checkPaymentStatus(paymentId, userId);
+    const status = PaymentService.checkPaymentStatus(paymentId, userId, isTestMode);
     
     // Handle different status responses
     if (status.status === 'error') {

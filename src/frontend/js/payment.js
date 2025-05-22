@@ -9,7 +9,7 @@ const paymentBox = document.getElementById('payment-instructions');
 const lastPayProof = { value: null };
 const pendingMessage = { value: null };
 let paymentWindow = null;
-let paymentCheckInterval = null;
+const paymentCheckInterval = null;
 
 // Payment configuration
 const PAYMENT_CONFIG = {
@@ -91,9 +91,18 @@ async function openPaymentWindow(paymentUrl, paymentId) {
       // Create a function to check payment status
       async function checkPaymentStatus() {
         try {
-          if (paymentWindow.closed) {
+          // Only check status if the payment window is closed
+          // This prevents premature status checks that might hide the payment box
+          if (paymentWindow?.closed) {
+            // Get current payment mode configuration
+            const paymentConfig = window.paymentMode?.getPaymentConfig?.() || {
+              isTestMode: true,
+              baseUrl: '/api/mock-pay',
+              type: 'mock'
+            };
+            
             // Check payment status
-            const statusResponse = await fetch(`/payment/status/${paymentId}?userId=${encodeURIComponent(currentSessionId)}`);
+            const statusResponse = await fetch(`/payment/status/${paymentId}?userId=${encodeURIComponent(currentSessionId)}&test=${paymentConfig.isTestMode}`);
             if (!statusResponse.ok) {
               throw new Error('Failed to check payment status');
             }
@@ -142,31 +151,23 @@ async function openPaymentWindow(paymentUrl, paymentId) {
         reject(new Error('Payment window timed out'));
       }
       
-      // Listen for payment completion
-      const checkInterval = setInterval(checkPaymentStatus, 1000);
-      
-      // Also check if the tab is still open after 5 minutes
-      const timeoutId = setTimeout(handlePaymentTimeout, 5 * 60 * 1000);
-      
-      // Clean up the timeout when the promise resolves or rejects
-      const cleanup = () => clearTimeout(timeoutId);
-      Promise.resolve().then(() => {
-        if (typeof checkPaymentStatus === 'function') {
-          const paymentPromise = new Promise((resolve, reject) => {
-            const checkInterval = setInterval(checkPaymentStatus, 1000);
-            // Also add the same cleanup to the new promise
-            const cleanupCheck = () => {
-              clearInterval(checkInterval);
-              clearTimeout(timeoutId);
-            };
-            // Attach cleanup to both success and failure cases
-            resolve.cleanupFn = cleanupCheck;
-            reject.cleanupFn = cleanupCheck;
-          });
-          
-          paymentPromise.then(cleanup, cleanup);
-        }
-      });
+      // Listen for payment completion - but with a delay to prevent premature checks
+      // This delay gives the payment window time to open properly
+      setTimeout(() => {
+        const checkInterval = setInterval(checkPaymentStatus, 2000); // Check less frequently
+        
+        // Also check if the tab is still open after 5 minutes
+        const timeoutId = setTimeout(handlePaymentTimeout, 5 * 60 * 1000);
+        
+        // Clean up the timeout when the promise resolves or rejects
+        const cleanup = () => {
+          clearTimeout(timeoutId);
+          clearInterval(checkInterval);
+        };
+        
+        // Attach cleanup to both success and failure cases
+        Promise.prototype.finally.call(Promise.resolve(), cleanup);
+      }, 1000); // Wait 1 second before starting to check
     });
     
   } catch (error) {
@@ -181,7 +182,7 @@ async function openPaymentWindow(paymentUrl, paymentId) {
 
 // Show payment button with retry option
 function showPaymentButton(paymentId, sessionId = null) {
-  const currentSessionId = sessionId || (window.currentSessionId || 'sess_' + Math.random().toString(36).substring(2, 15));
+  const currentSessionId = sessionId || (window.currentSessionId || `sess_${Math.random().toString(36).substring(2, 15)}`);
   
   // Set the current session ID if not already set
   if (!window.currentSessionId) {
@@ -272,12 +273,25 @@ async function checkPaymentStatus(paymentId, sessionId = null) {
     showInfo('Verifying payment...');
     console.log('Checking payment status for:', { paymentId, sessionId: currentSessionId });
     
-    const response = await fetch(`/payment/status/${paymentId}?userId=${encodeURIComponent(currentSessionId)}`, {
+    // Get current payment mode configuration
+    const paymentConfig = window.paymentMode?.getPaymentConfig?.() || {
+      isTestMode: true,
+      baseUrl: '/api/mock-pay',
+      type: 'mock'
+    };
+
+    // Always use the standard payment status endpoint
+    // The backend will handle test vs. live mode internally
+    const response = await fetch(`/payment/status/${paymentId}?userId=${encodeURIComponent(currentSessionId)}&test=${paymentConfig.isTestMode}`, {
       headers: { 'Accept': 'application/json' }
     });
-    
+
+    console.log('Payment status check response:', response.status);
+
     if (!response.ok) {
+      // Try to get error details from response
       const error = await response.json().catch(() => ({}));
+      console.error('Payment status check failed:', { status: response.status, error });
       throw new Error(error.error || `HTTP error! status: ${response.status}`);
     }
     
@@ -310,10 +324,10 @@ async function checkPaymentStatus(paymentId, sessionId = null) {
       }
       
       return true;
-    } else {
-      showInfo('Payment not completed yet. Please complete the payment or try again.');
-      return false;
     }
+    
+    showInfo('Payment not completed yet. Please complete the payment or try again.');
+    return false;
   } catch (error) {
     console.error('Error checking payment status:', error);
     showError(`Payment verification failed: ${error.message}`);
@@ -327,6 +341,8 @@ async function checkPaymentStatus(paymentId, sessionId = null) {
     if (buttonText) buttonText.textContent = 'Pay Now';
     if (buttonSpinner) buttonSpinner.style.display = 'none';
   }
+  
+  return false;
 }
 
 // Show help information for payment issues
