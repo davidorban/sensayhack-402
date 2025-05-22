@@ -30,13 +30,14 @@ The application offers a complete solution for AI replica creators to monetize t
 
 ## Technical Details
 
-- The application uses localStorage to maintain mode settings
-- The `page-mode.js` script manages environment settings for both test and live modes
-- Both test and live pages use the same underlying code with different mode configurations
-- The test environment uses mock responses for easier development and testing
-- The live environment uses real API endpoints for both AI responses and payments
-- Coinbase x402 protocol handles the payment processing through the payment.html page
-- The `/api/mock` folder contains sample responses for local development testing
+- The application uses a dedicated page approach for different environments
+- Test environment (`test.html`) and Live environment (`live.html`) are completely separate pages
+- The `page-mode.js` script automatically detects which page is being used and applies the appropriate settings
+- No manual toggling is required - simply navigate to the appropriate page for your needs
+- The test environment uses test API endpoints for development and testing
+- The live environment uses production API endpoints for both AI responses and payments
+- Coinbase x402 protocol handles the payment processing
+- Browser cache control ensures users always get the latest version of the application
 
 ## Development
 

@@ -123,28 +123,39 @@
   
   <div class="home-container">
     <div class="card">
-      <h2>Welcome to Sensay x402</h2>
+      <h2>🧠 Replica Payment – Crypto-Enforced AI Interactions</h2>
       <div class="card-description">
         <div class="image-container">
-          <img src="images/replica-payment.png" alt="Sensay x402 Replica Payment" class="feature-image">
+          <img src="images/replica-payment.png" alt="Replica Payment" class="feature-image">
         </div>
         
-        <p>Sensay x402 is a pay-to-chat application that allows you to interact with an AI assistant using Coinbase's x402 protocol for payments. This demo showcases how to integrate cryptocurrency payments with AI chat services.</p>
+        <p>Replica Payment is a demo application that enforces secure cryptocurrency payments before users can interact with an AI-powered digital replica. It integrates the Coinbase x402 protocol with the Sensay API, enabling AI creators to monetize their services through pay-to-chat functionality.</p>
         
-        <h3>The Problem</h3>
-        <p>Integrating payment systems with AI services often requires complex toggle mechanisms to switch between test and live environments. This can lead to confusion when the visual state of toggles doesn't match the actual functionality.</p>
+        <h3>🚩 The Problem</h3>
+        <p>While AI chatbots and digital replicas are becoming increasingly capable, there is no native mechanism to enforce payment before responses are generated. This limits monetization, allows abuse, and creates friction for developers trying to build secure, transaction-gated experiences.</p>
         
-        <h3>Our Solution</h3>
-        <p>We've simplified the experience by creating separate environments for testing and live usage, eliminating the need for confusing toggle switches. This ensures that the user interface clearly communicates the current mode of operation.</p>
-        
-        <h3>Key Features</h3>
+        <h3>💡 Our Solution</h3>
+        <p>Replica Payment creates a seamless flow where:</p>
         <ul class="feature-list">
-          <li>Clear separation between test and live environments</li>
-          <li>Seamless integration with Coinbase x402 payment protocol</li>
-          <li>Mock responses in test mode for easy development</li>
-          <li>Live AI responses in production mode</li>
-          <li>Secure payment processing</li>
+          <li>The user sends a message</li>
+          <li>The system checks for valid payment via Coinbase's x402 protocol</li>
+          <li>Only paid messages are passed through to the Sensay Replica for processing</li>
         </ul>
+        <p>No mock environments or toggles — this is a <strong>production-ready integration</strong> showcasing real-time payment enforcement.</p>
+        
+        <h3>🔑 Key Features</h3>
+        <ul class="feature-list">
+          <li>End-to-end crypto payment enforcement with Coinbase x402</li>
+          <li>Real Sensay Replica responses, triggered only after verified payments</li>
+          <li>Secure server-side validation of pay tokens</li>
+          <li>Flexible configuration via <code>.env</code> for asset, chain, and amount</li>
+          <li>Optional: QR display, retry logic, and session-based tracking</li>
+        </ul>
+        
+        <h3>🔐 Why It Matters</h3>
+        <p>This approach gives AI creators, platforms, and developers a powerful way to control access, prevent spam, and monetize interactions while maintaining a smooth and trustworthy user experience.</p>
+        
+        <p><em>Built by David Orban for the Sensay Hackathon.</em></p>
       </div>
     </div>
     

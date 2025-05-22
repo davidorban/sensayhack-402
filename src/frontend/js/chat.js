@@ -88,25 +88,21 @@ async function sendMessage(message, messageId, sessionId, isRetry = false) {
   const originalButtonText = sendButton.textContent;
   sendButton.disabled = true;
   sendButton.textContent = 'Sending...';
-  
+
   try {
-    const requestBody = { 
-      message,
+    // Prepare request body
+    const requestBody = {
+      message: message,
       metadata: {
-        messageId,
-        sessionId,
+        messageId: messageId,
+        sessionId: sessionId,
         timestamp: new Date().toISOString()
       }
     };
     
-    console.log('Sending message:', { messageId, sessionId, isRetry });
-    
-    let response;
-    let responseData;
-    
     // Check if we should use test replica
     // Ensure window.paymentMode is fully initialized before accessing useTestReplica
-    let useTestReplica = true; // Default to test mode
+    let useTestReplica = false; // Default to live mode
     
     if (window.paymentMode && typeof window.paymentMode.useTestReplica === 'function') {
       useTestReplica = window.paymentMode.useTestReplica();
@@ -117,317 +113,143 @@ async function sendMessage(message, messageId, sessionId, isRetry = false) {
     
     console.log('Using test replica:', useTestReplica);
     
-    // Make API call with appropriate endpoint based on replica mode
     // Determine the appropriate API endpoint based on environment and mode
     let apiUrl;
     const isLocalDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     
-    if (isLocalDevelopment) {
-      // In local development, we can use mock endpoints for easier testing
-      if (useTestReplica) {
-        apiUrl = '/api/mock/chat'; // Use mock data for test mode
-      } else {
-        apiUrl = '/api/chat'; // Use real endpoint for live mode
-      }
-    } else {
-      // In production, always use the real API endpoints
+    // Check if we're in a live environment (either production or live.html)
+    const isLiveEnvironment = !isLocalDevelopment || window.location.pathname.includes('live.html');
+    
+    if (isLiveEnvironment) {
+      // In live environment, always use the real API endpoint
       apiUrl = '/api/chat';
+      console.log('Live environment detected - using production API endpoint');
+      // Force live mode in live environment
+      useTestReplica = false;
+    } else if (useTestReplica) {
+      // In local development test mode, use test API endpoint
+      apiUrl = '/api/chat/test';
+      console.log('Local development test mode - using test API endpoint');
+    } else {
+      // Default to standard API endpoint
+      apiUrl = '/api/chat';
+      console.log('Using standard API endpoint');
     }
     
     console.log('Using API URL:', apiUrl);
     
-    try {
-      // Check if we're running locally and should use a mock response
-      const isLocalDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    let response;
+    let responseData;
+    
+    // For test mode in local development, provide a mock response
+    if (isLocalDevelopment && useTestReplica) {
+      console.log('Using local mock response for development');
       
-      if (isLocalDevelopment && useTestReplica) {
-        // Provide a direct mock response when in local development and test mode
-        console.log('Using local mock response for development');
-        
-        // Simulate a network delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Create a mock response
-        responseData = {
-          status: 'success',
-          reply: `This is a mock response in ${useTestReplica ? 'TEST' : 'LIVE'} mode. Your message was: "${message}"`,
-          messageId: messageId,
-          timestamp: new Date().toISOString()
-        };
-        
-        // Create a mock response object
-        response = {
-          status: 200,
-          ok: true
-        };
-      } else {
-        // Make the actual API request
-        response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Request-ID': messageId,
-            'X-Session-ID': sessionId || '',
-            'X-Test-Mode': useTestReplica ? 'true' : 'false'
-          },
-          body: JSON.stringify({
-            ...requestBody,
-            metadata: {
-              ...requestBody.metadata,
-              testMode: useTestReplica
-            }
-          })
-        });
-        
-        // Check if response is OK before parsing JSON
-        if (!response.ok) {
-          throw new Error(`Server responded with status: ${response.status}`);
-        }
-        
-        try {
-          responseData = await response.json();
-        } catch (jsonError) {
-          console.error('Error parsing JSON response:', jsonError);
-          throw new Error('Invalid response from server');
-        }
+      // Simulate a network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Create a mock response
+      responseData = {
+        status: 'success',
+        reply: `This is a mock response in TEST mode. Your message was: "${message}"`,
+        messageId: messageId,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Create a mock response object
+      response = {
+        status: 200,
+        ok: true
+      };
+    } else {
+      // Make the API request - always use POST for real API endpoints
+      console.log('Making API request to:', apiUrl);
+      
+      // For real API endpoints, use POST method
+      response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Request-ID': messageId,
+          'X-Session-ID': sessionId || '',
+          'X-Test-Mode': useTestReplica ? 'true' : 'false' // Set based on the current mode
+        },
+        body: JSON.stringify({
+          message: message,
+          metadata: {
+            messageId: messageId,
+            sessionId: sessionId,
+            timestamp: new Date().toISOString(),
+            testMode: useTestReplica // Set based on the current mode
+          }
+        })
+      });
+    
+      // Check if response is OK before parsing JSON
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
       }
-    } catch (e) {
-      console.error('Error making API request:', e);
       
-      // Always provide a fallback response in local development
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        console.log('Using fallback mock response after error');
-        
-        response = {
-          status: 200,
-          ok: true
-        };
-        
-        // Create a developer-friendly fallback response
-        responseData = {
-          status: 'success',
-          reply: `[Development Mode] Your message: "${message}" was received, but there was an API error. This is a fallback response.`,
-          messageId: messageId,
-          sessionId: 'local-dev-session',
-          timestamp: new Date().toISOString()
-        };
-      } else {
-        // In production, show a more user-friendly error
-        throw new Error('Unable to connect to the AI service. Please try again later.');
+      try {
+        responseData = await response.json();
+      } catch (jsonError) {
+        console.error('Error parsing JSON response:', jsonError);
+        throw new Error('Invalid response from server');
       }
     }
     
-    console.log('Server response:', { status: response.status, data: responseData });
-    
-    if (response.status === 200) {
-      showSuccess('');
-      
+    // Process the response data
+    if (responseData && responseData.status === 'success') {
       // Display the AI's response
-      displayMessage(responseData.reply || 'No response from server', 'ai', messageId);
+      displayMessage(responseData.reply, 'ai', responseData.messageId || messageId);
       
-      // Store the successful message in session storage
-      if (sessionId) {
-        const sessionMessages = JSON.parse(sessionStorage.getItem(`session_${sessionId}`) || '[]');
-        
-        // Add user message
-        sessionMessages.push({
-          id: messageId,
-          type: 'user',
-          content: message,
-          timestamp: new Date().toISOString()
-        });
-        
-        // Add AI response
-        sessionMessages.push({
-          id: messageId,
-          type: 'ai',
-          content: responseData.reply || 'No response from server',
-          timestamp: new Date().toISOString()
-        });
-        
-        sessionStorage.setItem(`session_${sessionId}`, JSON.stringify(sessionMessages));
-      }
-      
-    } else if (response.status === 402) {
-      // Payment required
-      console.log('Payment required:', responseData);
-      
-      // Ensure we have a valid payment ID
-      const paymentId = responseData.paymentId || `pay_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-      
-      // Store the pending message
-      if (sessionId) {
-        const pendingMessages = JSON.parse(sessionStorage.getItem(`pending_${sessionId}`) || '[]');
-        pendingMessages.push({
-          messageId,
-          content: message,
-          paymentId: paymentId,
-          timestamp: new Date().toISOString()
-        });
-        sessionStorage.setItem(`pending_${sessionId}`, JSON.stringify(pendingMessages));
-      }
-      
-      // Show payment UI with the payment URL from the server
-      // Check if we have a payment URL or HTML page link
-      let paymentUrlStr = responseData.paymentUrl || responseData.paymentHtml;
-      
-      // If no payment URL is provided, construct a fallback URL
-      if (!paymentUrlStr && responseData.paymentId) {
-        paymentUrlStr = `/payment.html?paymentId=${responseData.paymentId}&userId=${encodeURIComponent(sessionId)}`;
-        console.log('Using fallback payment URL:', paymentUrlStr);
-      }
-      
-      if (paymentUrlStr) {
-        // Get payment config based on current mode
-        const paymentConfig = window.paymentMode?.getPaymentConfig?.() || {
-          isTestMode: true,
-          baseUrl: '/api/mock-pay',
-          type: 'mock'
-        };
-        
-        // Ensure we have all required payment details
-        const paymentAmount = responseData.amount || '0.01'; // Default to 0.01 if amount is not provided
-        const paymentCurrency = responseData.currency || responseData.asset || 'USD'; // Get currency
-        
-        // Log payment details to help with debugging
-        console.log('Payment details:', {
-          paymentId,
-          amount: paymentAmount,
-          currency: paymentCurrency,
-          messageId,
-          sessionId
-        });
-        
-        // Add test mode parameter to payment URL if in test mode
-        const paymentUrl = new URL(paymentUrlStr, window.location.origin);
-        if (paymentConfig.isTestMode) {
-          paymentUrl.searchParams.set('test', 'true');
+      // Check if payment is required
+      if (responseData.paymentRequired) {
+        // Show payment UI
+        if (window.paymentHandler && typeof window.paymentHandler.showPaymentUI === 'function') {
+          window.paymentHandler.showPaymentUI(responseData.paymentUrl, responseData.paymentAmount, responseData.paymentCurrency);
+        } else {
+          console.error('Payment handler not available');
+          showError('Payment processing is not available at this time.');
         }
-        
-        // Store the payment ID in session storage for later reference
-        if (sessionId) {
-          const paymentData = {
-            paymentId,
-            amount: paymentAmount,
-            currency: paymentCurrency,
-            messageId,
-            timestamp: new Date().toISOString()
-          };
-          sessionStorage.setItem(`payment_${paymentId}`, JSON.stringify(paymentData));
-        }
-        
-        // Show payment information
-        const isTestMode = window.paymentMode?.isTest?.() || true;
-        const paymentInfoHtml = `
-          <div class="payment-info">
-            <p>🔒 This message requires a small payment to process.</p>
-            <p>Click the button below to complete the payment ${isTestMode ? '(test mode)' : ''}.</p>
-            <p>Amount: <strong>${paymentAmount || '0.01'} ${paymentCurrency || 'USD'}</strong></p>
-            <p>Message ID: <code>${messageId || 'N/A'}</code></p>
-            <p>Payment ID: <code>${paymentId || 'N/A'}</code></p>
-            <p>Session: <code>${sessionId ? `${sessionId.substring(0, 8)}...` : 'unknown'}</code></p>
-            <div class="payment-actions">
-              <button id="open-payment-btn" class="btn btn-primary">Open Payment Window</button>
-              <button id="check-payment-btn" class="btn btn-secondary">Check Payment Status</button>
-            </div>
-            ${isTestMode ? '<p class="payment-note">Note: This is a test payment. No real money will be charged.</p>' : ''}
-          </div>
-        `;
-        
-        // Set the payment box content
-        paymentBox.innerHTML = paymentInfoHtml;
-        
-        // Make sure the payment box is visible
-        paymentBox.style.display = 'block';
-        
-        // Add event listeners for the buttons
-        document.getElementById('open-payment-btn')?.addEventListener('click', () => {
-          try {
-            const paymentUrlToUse = responseData.paymentUrl || responseData.paymentHtml;
-            if (!paymentUrlToUse) {
-              throw new Error('No payment URL available');
-            }
-            // Ensure URL is well-formed and log info
-            const paymentURL = new URL(paymentUrlToUse, window.location.origin).toString();
-            console.log('Opening payment window with URL:', paymentURL, 'Payment ID:', paymentId);
-            openPaymentWindow(paymentURL, paymentId);
-            
-            // Don't hide the payment box - it will be hidden when payment is verified
-            // This ensures the payment notice remains visible until the user completes the payment
-          } catch (error) {
-            console.error('Error opening payment window:', error);
-            showError(`Failed to open payment window: ${error.message}`);
-          }
-        });
-        
-        document.getElementById('check-payment-btn')?.addEventListener('click', () => {
-          try {
-            if (!paymentId) {
-              throw new Error('No payment ID available');
-            }
-            // Show checking status message
-            showInfo('Checking payment status...');
-            checkPaymentStatus(paymentId, sessionId)
-              .then(isPaid => {
-                if (isPaid) {
-                  // If payment is verified, hide the payment box
-                  paymentBox.style.display = 'none';
-                }
-              })
-              .catch(error => {
-                console.error('Error checking payment status:', error);
-                showError(`Failed to check payment status: ${error.message}`);
-              });
-          } catch (error) {
-            console.error('Error checking payment status:', error);
-            showError(`Failed to check payment status: ${error.message}`);
-          }
-        });
-      } else {
-        // Create a fallback payment UI if no payment URL is provided
-        console.warn('No payment URL provided by server, creating fallback payment UI');
-        
-        // Generate a fallback payment ID if needed
-        const fallbackPaymentId = responseData.paymentId || `pay_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-        
-        // Get payment details from response data or use defaults
-        const fallbackAmount = responseData.amount || '0.01';
-        const fallbackCurrency = responseData.currency || responseData.asset || 'USD';
-        
-        // Show a basic payment UI
-        paymentBox.innerHTML = `
-          <div class="payment-info">
-            <p>🔒 This message requires a payment to process.</p>
-            <p>The server did not provide a payment URL. Please try again or contact support.</p>
-            <p>Amount: <strong>${fallbackAmount} ${fallbackCurrency}</strong></p>
-            <p>Payment ID: <code>${fallbackPaymentId || 'N/A'}</code></p>
-            <p>Message ID: <code>${messageId || 'N/A'}</code></p>
-            <div class="payment-actions">
-              <button id="retry-payment-btn" class="btn btn-primary">Retry</button>
-            </div>
-          </div>
-        `;
-        
-        // Make sure the payment box is visible
-        paymentBox.style.display = 'block';
-        
-        // Add event listener for retry button
-        document.getElementById('retry-payment-btn')?.addEventListener('click', () => {
-          try {
-            sendMessage(message, messageId, sessionId, true);
-          } catch (error) {
-            console.error('Error retrying message:', error);
-            showError(`Failed to retry: ${error.message}`);
-          }
-        });
       }
       
+      // Check if we need to update the session
+      if (responseData.sessionId && responseData.sessionId !== currentSessionId) {
+        currentSessionId = responseData.sessionId;
+        localStorage.setItem('sessionId', currentSessionId);
+        console.log('Updated session ID:', currentSessionId);
+      }
     } else {
-      throw new Error(responseData.error || `Server responded with status ${response.status}`);
+      // Handle error response
+      const errorMessage = responseData.error || 'Unknown error occurred';
+      console.error('API error:', errorMessage);
+      
+      // Show a user-friendly error message
+      const isTestMode = useTestReplica;
+      
+      if (isTestMode) {
+        showError(`[Test Mode] Error: ${errorMessage}`);
+      } else {
+        showError('Sorry, there was a problem processing your request. Please try again later.');
+      }
     }
   } catch (error) {
     console.error('Error sending message:', error);
-    showError(`Failed to send message: ${error.message}`);
+    
+    // Create a helpful error message based on the environment
+    const isInLiveHtml = window.location.pathname.includes('live.html');
+    
+    if (isInLiveHtml) {
+      // In live.html, show a clear production error
+      displayMessage(`Sorry, there was an error connecting to the server. Please try again later. (Error: ${error.message})`, 'ai', messageId);
+    } else if (isLocalDevelopment) {
+      // In development, provide a mock response so testing can continue
+      displayMessage(`[Development Mode] Your message: "${message}" was received, but there was an API error: ${error.message}. This is a fallback response.`, 'ai', messageId);
+    } else {
+      // Generic error for other cases
+      showError(`Failed to send message: ${error.message}`);
+    }
     
     // Show retry button if this wasn't a retry
     if (!isRetry) {
@@ -450,3 +272,37 @@ async function sendMessage(message, messageId, sessionId, isRetry = false) {
     sendButton.textContent = originalButtonText;
   }
 }
+
+// Show an error message
+function showError(message) {
+  const errorElement = addMessage(message, 'system');
+  errorElement.classList.add('error');
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(unsafe) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  // Set up event listeners
+  sendButton.addEventListener('click', handleSendMessage);
+  
+  messageInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSendMessage();
+    }
+  });
+  
+  // Load session ID from localStorage if available
+  currentSessionId = localStorage.getItem('sessionId');
+  
+  console.log('Chat initialized, session ID:', currentSessionId);
+});

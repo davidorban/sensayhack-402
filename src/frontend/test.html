@@ -4,58 +4,111 @@
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src *; frame-src *; base-uri 'self'; form-action 'self'; child-src *;" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sensay x402 - Test Mode</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Sensay x402 Chat - Test Environment</title>
   <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .environment-badge {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background-color: #ffc107;
+      color: #333;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      z-index: 1000;
+      border: 2px solid #e0a800;
+    }
+    
+    .back-button {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background-color: #f0f0f0;
+      color: #333;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      z-index: 1000;
+      border: 2px solid #ddd;
+      text-decoration: none;
+      transition: background-color 0.3s ease;
+    }
+    
+    .back-button:hover {
+      background-color: #e0e0e0;
+    }
+    
+    .mode-info {
+      background-color: #fff3cd;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-left: 4px solid #ffc107;
+    }
+    
+    .mode-info h3 {
+      margin-top: 0;
+      color: #856404;
+    }
+    
+    .mode-info p {
+      margin-bottom: 0;
+      color: #856404;
+    }
+    
+    .note {
+      font-style: italic;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-  <div class="header">
-    <a href="index.html" class="back-button">← Back to Home</a>
-    <h1>Sensay x402 - Test Mode</h1>
-    <div class="mode-indicator test-mode">TEST MODE</div>
-  </div>
-
-  <div class="chat-container">
-    <div class="chat-messages" id="chat-messages">
-      <div class="message ai">
-        <div class="message-content">
-          Hello! I'm Sensay, your AI assistant. This is the TEST environment where you can experiment without making real payments. How can I help you today?
+  <div class="environment-badge">TEST ENVIRONMENT</div>
+  <a href="index.html" class="back-button">← Back to Home</a>
+  
+  <h1>Pay-to-Chat with Sensay</h1>
+  
+  <div class="layout-container">
+    <!-- Left side: Chat container -->
+    <div class="chat-column">
+      <div class="mode-info">
+        <h3>Test Environment</h3>
+        <p>You are using the test environment with mock AI responses and simulated payments. <span class="note">No real transactions will occur.</span></p>
+      </div>
+      
+      <div id="chat-container">
+        <div id="response">Send a message to start chatting with the test AI...</div>
+        <div id="input-area">
+          <textarea id="message-input" placeholder="Type your message..."></textarea>
+          <button id="send-button">Send</button>
         </div>
       </div>
     </div>
     
-    <div class="chat-input-container">
-      <textarea id="chat-input" placeholder="Type your message here..." rows="3"></textarea>
-      <button id="send-button">Send</button>
+    <!-- Right side: Controls and Payment -->
+    <div class="controls-column">
+      <!-- Payment Instructions -->
+      <div id="payment-instructions"></div>
     </div>
   </div>
 
-  <div class="payment-modal" id="payment-modal">
-    <div class="payment-modal-content">
-      <h2>Payment Required</h2>
-      <p>To continue this conversation, a small cryptocurrency payment is required.</p>
-      <p class="payment-amount">Amount: <span id="payment-amount">0.001 ETH</span></p>
-      <div class="payment-buttons">
-        <button id="pay-button">Make Payment</button>
-        <button id="cancel-payment-button">Cancel</button>
-      </div>
-      <p class="payment-note">Note: In test mode, no real payment will be processed.</p>
-    </div>
-  </div>
-
-  <div class="payment-iframe-container" id="payment-iframe-container">
-    <div class="payment-iframe-header">
-      <button id="close-iframe-button">Close</button>
-    </div>
-    <iframe id="payment-iframe" src="about:blank"></iframe>
-  </div>
-
-  <script src="js/page-mode.js"></script>
   <script>
-    // Initialize the page mode
-    const pageMode = new PageMode('test');
-    pageMode.initialize();
+    // Force test mode settings
+    localStorage.setItem('paymentTestMode', 'true');
+    localStorage.setItem('replicaTestMode', 'true');
   </script>
-  <script src="js/chat.js"></script>
+  <script src="js/compat.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/session.js"></script>
+  <script src="js/page-mode.js"></script>
   <script src="js/payment.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
