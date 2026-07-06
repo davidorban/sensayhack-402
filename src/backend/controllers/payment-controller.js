@@ -8,7 +8,7 @@ export const PaymentController = {
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  getPaymentDetails(req, res) {
+  async getPaymentDetails(req, res) {
     try {
       const { paymentId } = req.params;
       const userId = req.query.userId || req.session.userId;
@@ -18,7 +18,7 @@ export const PaymentController = {
       logger.info('Payment details request:', { paymentId, userId, isTestMode });
       
       // Get payment details from session store
-      const paymentDetails = PaymentService.getPaymentDetails(paymentId, userId, isTestMode);
+      const paymentDetails = await PaymentService.getPaymentDetails(paymentId, userId, isTestMode);
       
       if (!paymentDetails || paymentDetails.status === 'error') {
         return res.status(404).json({
@@ -60,7 +60,7 @@ export const PaymentController = {
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  verifyPayment(req, res) {
+  async verifyPayment(req, res) {
     try {
       const { paymentId, proof, userId, amount = '0.01', currency = 'USD' } = req.body;
       const requestTimestamp = new Date().toISOString();
@@ -76,7 +76,7 @@ export const PaymentController = {
       }
 
       // Verify the payment
-      const verificationResult = PaymentService.verifyPayment(
+      const verificationResult = await PaymentService.verifyPayment(
         paymentId, 
         userId || req.session.userId, 
         proof, 
@@ -130,7 +130,7 @@ export const PaymentController = {
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object
    */
-  checkPaymentStatus(req, res) {
+  async checkPaymentStatus(req, res) {
     const { paymentId } = req.params;
     const userId = req.query.userId || req.session.userId;
     const isTestMode = req.query.test === 'true';
@@ -139,7 +139,7 @@ export const PaymentController = {
     logger.info('Payment status check:', { paymentId, userId, isTestMode });
     
     // Check payment status
-    const status = PaymentService.checkPaymentStatus(paymentId, userId, isTestMode);
+    const status = await PaymentService.checkPaymentStatus(paymentId, userId, isTestMode);
     
     // Handle different status responses
     if (status.status === 'error') {

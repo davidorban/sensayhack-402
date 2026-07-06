@@ -1,10 +1,12 @@
 // Chat controller
 import { SensayService } from '../services/sensay-service.js';
 import { PaymentService } from '../services/payment-service.js';
-import { sessionStore } from '../services/session-store.js';
+import { persistentSessionStore } from '../services/persistent-session-store.js';
 import { generateMessageId, generateRequestId } from '../utils/id-generator.js';
 import { logger } from '../utils/logger.js';
 import { config } from '../utils/config.js';
+import { validateSchema, CommonSchemas } from '../utils/validation.js';
+import { ValidationError, ExternalServiceError, DatabaseError } from '../utils/error-types.js';
 
 export const ChatController = {
   /**
@@ -23,19 +25,16 @@ export const ChatController = {
     res.set('X-Request-ID', requestId);
     res.set('X-Message-ID', messageId);
     
-    // Input validation
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
-      return res.status(400).json({
-        status: 'error',
-        error: 'Message is required and must be a non-empty string',
-        timestamp: new Date().toISOString(),
-        requestId
-      });
+    // Input validation using schema
+    try {
+      validateSchema({ message }, CommonSchemas.chatMessage);
+    } catch (error) {
+      throw error; // Will be handled by error middleware
     }
 
     try {
       // Get or create user session
-      let userSession = sessionStore.getSession(userId);
+      let userSession = await persistentSessionStore.getSession(userId);
       if (!userSession) {
         userSession = {
           userId,
@@ -45,13 +44,13 @@ export const ChatController = {
           paymentStatus: {},
           metadata: {}
         };
-        sessionStore.setSession(userId, userSession);
+        await persistentSessionStore.setSession(userId, userSession);
       }
       
       // Update session activity
       userSession.lastActive = new Date();
       userSession.messageCount = (userSession.messageCount || 0) + 1;
-      sessionStore.setSession(userId, userSession);
+      await persistentSessionStore.setSession(userId, userSession);
       
       // Check if payment is required
       const requiresPayment = PaymentService.checkIfPaymentRequired(userSession);
@@ -108,7 +107,12 @@ export const ChatController = {
       }
       
       // Forward the message to Sensay API
-      const response = await SensayService.sendMessage(message, userId, messageId);
+      let response;
+      try {
+        response = await SensayService.sendMessage(message, userId, messageId);
+      } catch (error) {
+        throw new ExternalServiceError('Sensay API', error.message, error);
+      }
       
       // Calculate processing time
       const [seconds, nanoseconds] = process.hrtime(startTime);
@@ -174,19 +178,16 @@ export const ChatController = {
     res.set('X-Message-ID', messageId);
     res.set('X-Test-Mode', 'true');
     
-    // Input validation
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
-      return res.status(400).json({
-        status: 'error',
-        error: 'Message is required and must be a non-empty string',
-        timestamp: new Date().toISOString(),
-        requestId
-      });
+    // Input validation using schema
+    try {
+      validateSchema({ message }, CommonSchemas.chatMessage);
+    } catch (error) {
+      throw error; // Will be handled by error middleware
     }
 
     try {
       // Get or create user session
-      let userSession = sessionStore.getSession(userId);
+      let userSession = await persistentSessionStore.getSession(userId);
       if (!userSession) {
         userSession = {
           userId,
@@ -196,13 +197,13 @@ export const ChatController = {
           paymentStatus: {},
           metadata: {}
         };
-        sessionStore.setSession(userId, userSession);
+        await persistentSessionStore.setSession(userId, userSession);
       }
       
       // Update session activity
       userSession.lastActive = new Date();
       userSession.messageCount = (userSession.messageCount || 0) + 1;
-      sessionStore.setSession(userId, userSession);
+      await persistentSessionStore.setSession(userId, userSession);
       
       // Skip payment check for test mode
       

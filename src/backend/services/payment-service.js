@@ -1,6 +1,6 @@
 // Payment service
 import crypto from 'node:crypto';
-import { sessionStore } from './session-store.js';
+import { persistentSessionStore } from './persistent-session-store.js';
 import { logger } from '../utils/logger.js';
 import config from '../config/index.js';
 
@@ -15,11 +15,11 @@ export class PaymentService {
    * @param {boolean} isTestMode - Whether to use test mode
    * @returns {Object} - Payment details
    */
-  static getPaymentDetails(paymentId, userId, isTestMode = false) {
+  static async getPaymentDetails(paymentId, userId, isTestMode = false) {
     logger.info('Getting payment details:', { paymentId, userId, isTestMode });
     
     // If test mode is enabled, create a mock payment if it doesn't exist
-    if (isTestMode && !sessionStore.isPaymentPending(paymentId) && !sessionStore.hasReceipt(paymentId)) {
+    if (isTestMode && !await persistentSessionStore.isPaymentPending(paymentId) && !await persistentSessionStore.hasReceipt(paymentId)) {
       // Create a mock payment for testing
       const mockPayment = {
         paymentId,
@@ -38,18 +38,18 @@ export class PaymentService {
       };
       
       // Store the mock payment
-      sessionStore.addPendingPayment(paymentId, mockPayment);
+      await persistentSessionStore.addPendingPayment(paymentId, mockPayment);
       logger.info('Created mock payment for test mode:', { paymentId });
     }
     
     // Check if payment is in pending payments
-    if (sessionStore.isPaymentPending(paymentId)) {
-      return sessionStore.getPendingPayment(paymentId);
+    if (await persistentSessionStore.isPaymentPending(paymentId)) {
+      return await persistentSessionStore.getPendingPayment(paymentId);
     }
     
     // Check if payment is already verified
-    if (sessionStore.hasReceipt(paymentId)) {
-      const receipt = sessionStore.getReceipt(paymentId);
+    if (await persistentSessionStore.hasReceipt(paymentId)) {
+      const receipt = await persistentSessionStore.getReceipt(paymentId);
       return {
         ...receipt,
         status: 'completed'
@@ -115,7 +115,7 @@ export class PaymentService {
     };
 
     // Store in pending payments first to ensure it's available for verification
-    sessionStore.addPendingPayment(paymentId, paymentDetails);
+    await persistentSessionStore.addPendingPayment(paymentId, paymentDetails);
     
     try {
       if (isMock) {
@@ -149,7 +149,7 @@ export class PaymentService {
         };
         
         // Update the pending payment with the new details
-        sessionStore.updatePendingPayment(paymentId, paymentDetails);
+        await persistentSessionStore.updatePendingPayment(paymentId, paymentDetails);
       }
       
       // Log the payment request
@@ -158,7 +158,7 @@ export class PaymentService {
       return { paymentId, ...paymentDetails };
     } catch (error) {
       // Clean up the pending payment if there was an error
-      sessionStore.deletePendingPayment(paymentId);
+      await persistentSessionStore.deletePendingPayment(paymentId);
       logger.error('Failed to create payment request:', error);
       throw new Error('Failed to create payment request');
     }
@@ -173,18 +173,18 @@ export class PaymentService {
    * @param {string} currency - Payment currency
    * @returns {Object} - Verification result
    */
-  static verifyPayment(paymentId, userId, proof, amount, currency) {
+  static async verifyPayment(paymentId, userId, proof, amount, currency) {
     // Check if payment is already verified
-    if (sessionStore.hasReceipt(paymentId)) {
+    if (await persistentSessionStore.hasReceipt(paymentId)) {
       return { 
         status: 'success', 
         message: 'Payment already verified',
-        receipt: sessionStore.getReceipt(paymentId)
+        receipt: await persistentSessionStore.getReceipt(paymentId)
       };
     }
     
     // Check if payment is pending
-    if (!sessionStore.isPaymentPending(paymentId)) {
+    if (!await persistentSessionStore.isPaymentPending(paymentId)) {
       return { 
         status: 'error', 
         message: 'Invalid or expired payment ID'
@@ -192,7 +192,7 @@ export class PaymentService {
     }
     
     // Get payment info
-    const paymentInfo = sessionStore.getPendingPayment(paymentId);
+    const paymentInfo = await persistentSessionStore.getPendingPayment(paymentId);
     const verifiedUserId = userId || paymentInfo?.userId || `user-${Date.now()}`;
     
     // Create receipt data
@@ -211,10 +211,10 @@ export class PaymentService {
     };
     
     // Save the receipt
-    sessionStore.addReceipt(paymentId, receiptData);
+    await persistentSessionStore.addReceipt(paymentId, receiptData);
     
     // Update user session
-    let userSession = sessionStore.getSession(verifiedUserId);
+    let userSession = await persistentSessionStore.getSession(verifiedUserId);
     if (userSession) {
       // Update session payment status
       userSession.paymentStatus = userSession.paymentStatus || {};
@@ -236,11 +236,11 @@ export class PaymentService {
       };
       
       // Save updated session
-      sessionStore.setSession(verifiedUserId, userSession);
+      await persistentSessionStore.setSession(verifiedUserId, userSession);
     }
     
     // Remove from pending
-    sessionStore.deletePendingPayment(paymentId);
+    await persistentSessionStore.deletePendingPayment(paymentId);
     
     // Log successful verification
     logger.info(`Payment verified - PaymentID: ${paymentId}, UserID: ${verifiedUserId}`);
@@ -258,7 +258,7 @@ export class PaymentService {
    * @param {string} userId - User ID
    * @returns {Object} - Payment status
    */
-  static checkPaymentStatus(paymentId, userId, isTestMode = false) {
+  static async checkPaymentStatus(paymentId, userId, isTestMode = false) {
     logger.info('Checking payment status:', { paymentId, userId, isTestMode });
     
     // If test mode is enabled and we want to auto-approve the payment
@@ -266,11 +266,11 @@ export class PaymentService {
       // Check if we should auto-approve this test payment
       // In a real app, you might want to add some conditions here
       // For demo purposes, we'll auto-approve if it's not already verified
-      if (!sessionStore.hasReceipt(paymentId)) {
+      if (!await persistentSessionStore.hasReceipt(paymentId)) {
         logger.info('Auto-approving test payment:', { paymentId });
         
         // Get the pending payment details or create mock details if needed
-        let paymentDetails = sessionStore.getPendingPayment(paymentId);
+        let paymentDetails = await persistentSessionStore.getPendingPayment(paymentId);
         if (!paymentDetails) {
           paymentDetails = {
             paymentId,
@@ -283,7 +283,7 @@ export class PaymentService {
             reason: 'Test payment',
             paymentType: 'mock'
           };
-          sessionStore.addPendingPayment(paymentId, paymentDetails);
+          await persistentSessionStore.addPendingPayment(paymentId, paymentDetails);
         }
         
         // Create a receipt for the payment
@@ -299,7 +299,7 @@ export class PaymentService {
         };
         
         // Add the receipt to the session store
-        sessionStore.addReceipt(paymentId, receipt);
+        await persistentSessionStore.addReceipt(paymentId, receipt);
         
         // Return success response
         return {
@@ -316,8 +316,8 @@ export class PaymentService {
     }
     
     // Check if payment is verified
-    if (sessionStore.hasReceipt(paymentId)) {
-      const receipt = sessionStore.getReceipt(paymentId);
+    if (await persistentSessionStore.hasReceipt(paymentId)) {
+      const receipt = await persistentSessionStore.getReceipt(paymentId);
       return {
         paymentId,
         paid: true,
@@ -328,7 +328,7 @@ export class PaymentService {
     }
     
     // Check if payment is pending
-    const paymentDetails = sessionStore.getPendingPayment(paymentId);
+    const paymentDetails = await persistentSessionStore.getPendingPayment(paymentId);
     if (paymentDetails) {
       return {
         paymentId,

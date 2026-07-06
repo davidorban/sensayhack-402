@@ -1,17 +1,33 @@
 // Server entry point
 import app from './app.js';
 import { logger } from './utils/logger.js';
-import { sessionStore } from './services/session-store.js';
+import { persistentSessionStore } from './services/persistent-session-store.js';
 
 const PORT = process.env.PORT || 3000;
 let httpServer = null;
 
 // Start the server
-httpServer = app.listen(PORT, () => {
-  logger.info(`Server running on http://localhost:${PORT}`);
-  logger.info(`Active sessions: ${sessionStore.getSessionCount()}`);
-  logger.info(`Pending payments: ${sessionStore.getPendingPaymentsCount()}`);
-  logger.info(`Cached receipts: ${sessionStore.getReceiptCacheCount()}`);
+const startServer = async () => {
+  // Initialize persistent session store
+  await persistentSessionStore.initialize();
+  
+  httpServer = app.listen(PORT, async () => {
+    logger.info(`Server running on http://localhost:${PORT}`);
+    
+    const sessionCount = await persistentSessionStore.getSessionCount();
+    const paymentsCount = await persistentSessionStore.getPendingPaymentsCount();
+    const receiptsCount = await persistentSessionStore.getReceiptCacheCount();
+    
+    logger.info(`Active sessions: ${sessionCount}`);
+    logger.info(`Pending payments: ${paymentsCount}`);
+    logger.info(`Cached receipts: ${receiptsCount}`);
+  });
+};
+
+// Start the server
+startServer().catch(error => {
+  logger.error('Failed to start server:', error);
+  process.exit(1);
 });
 
 // Handle graceful shutdown
@@ -32,6 +48,9 @@ const shutdown = async () => {
         });
       });
     }
+    
+    // Close persistent session store
+    await persistentSessionStore.close();
     
     // Add any additional cleanup here
     logger.info('Cleanup complete');
